@@ -1,6 +1,6 @@
 specVersion: 0.0.4
 schema:
-  file: ./schema.graphql
+  file: schema.graphql
 dataSources:
   - kind: ethereum
     name: TestRouter
@@ -17,12 +17,12 @@ dataSources:
         - Swap
       abis:
         - name: TestPairFactory
-          file: ./abis/TestPairFactory.json
+          file: TestRouter\abis\TestPairFactory.json
         - name: Dibs
-          file: ./abis/Dibs.json
+          file: TestRouter\abis\Dibs.json
         - name: TestRouter
-          file: ./abis/TestRouter.json
+          file: TestRouter\abis\TestRouter.json
       eventHandlers:
         - event: Swap(indexed address,uint256,address,indexed address)
           handler: handleSwap
-      file: ./src/test-router.ts
+      file: TestRouter\TestRouter.wasm

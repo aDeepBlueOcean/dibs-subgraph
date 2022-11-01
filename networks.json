@@ -2,6 +2,12 @@
   "goerli": {
     "TestRouter": {
       "address": "0x5D1eC97F6b58575CF859334F0e3679adD7a76872"
+    },
+    "TestPairFactory": {
+      "address": "0xa7F1BCa1F071923Cd27535ba40C2E8D44f157420"
+    },
+    "Dibs": {
+      "address": "0xE8221600C4F0DFd4524219bad2dc66B6F750E444"
     }
   }
 }
