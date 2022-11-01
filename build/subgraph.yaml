@@ -17,12 +17,12 @@ dataSources:
         - Swap
       abis:
         - name: TestPairFactory
-          file: TestRouter\abis\TestPairFactory.json
+          file: TestRouter/abis/TestPairFactory.json
         - name: Dibs
-          file: TestRouter\abis\Dibs.json
+          file: TestRouter/abis/Dibs.json
         - name: TestRouter
-          file: TestRouter\abis\TestRouter.json
+          file: TestRouter/abis/TestRouter.json
       eventHandlers:
         - event: Swap(indexed address,uint256,address,indexed address)
           handler: handleSwap
-      file: TestRouter\TestRouter.wasm
+      file: TestRouter/TestRouter.wasm

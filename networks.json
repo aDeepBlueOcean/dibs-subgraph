@@ -1,13 +1,13 @@
 {
   "goerli": {
-    "TestRouter": {
+    "Router": {
       "address": "0x5D1eC97F6b58575CF859334F0e3679adD7a76872"
     },
-    "TestPairFactory": {
+    "PairFactory": {
       "address": "0xa7F1BCa1F071923Cd27535ba40C2E8D44f157420"
     },
     "Dibs": {
-      "address": "0xE8221600C4F0DFd4524219bad2dc66B6F750E444"
+      "address": "0x03fDbdcA199280dB975d213f663ef9D2D251D61f"
     }
   }
 }

@@ -25,4 +25,4 @@ dataSources:
       eventHandlers:
         - event: Swap(indexed address,uint256,address,indexed address)
           handler: handleSwap
-      file: ./src/test-router.ts
+      file: ./src/main.ts

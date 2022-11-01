@@ -17,6 +17,19 @@ type SwapLog @entity {
   timestamp: BigInt!
 }
 
+type Lottery @entity {
+  id: ID! # round
+  totalTikets: BigInt!
+  round: BigInt!
+}
+
+type UserLottery @entity {
+  id: ID! # userAddress + round
+  user: Bytes!
+  round: BigInt!
+  tickets: BigInt!
+}
+
 type Referral @entity {
   id: ID! # userAddress + referralAddress
   user: Bytes!
@@ -32,3 +45,4 @@ type GeneratedVolume @entity {
   amountAsGrandparent: BigInt!
   lastUpdate: BigInt!
 }
+
