@@ -9,6 +9,8 @@ import {
   createSwapLog,
   getDIBS,
   getPairFactory,
+  getOrCreateLottery,
+  getOrCreateUserLottery,
 } from "./utils";
 
 export function handleSwap(event: Swap): void {
@@ -93,4 +95,14 @@ export function handleSwap(event: Swap): void {
   // create a referral if it does not exist
   createReferral(parentAddress, user);
   createSwapLog(event, round);
+
+  let lottery = getOrCreateLottery(round);
+  let userLottery = getOrCreateUserLottery(round, user);
+  let tickets = BigInt.fromI32(1);
+
+  userLottery.tickets = userLottery.tickets.plus(tickets);
+  userLottery.save();
+
+  lottery.totalTikets = lottery.totalTikets.plus(tickets);
+  lottery.save();
 }

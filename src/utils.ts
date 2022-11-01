@@ -51,7 +51,8 @@ export function getOrCreateGeneratedVolume(
   }
   return generatedVolume as GeneratedVolume;
 }
-function getOrCreateLottery(round: BigInt): Lottery {
+
+export function getOrCreateLottery(round: BigInt): Lottery {
   let id = round.toString();
   let lottery = Lottery.load(id);
   if (lottery == null) {
@@ -62,7 +63,10 @@ function getOrCreateLottery(round: BigInt): Lottery {
   }
   return lottery;
 }
-function getOrCreateUserLottery(round: BigInt, user: Address): UserLottery {
+export function getOrCreateUserLottery(
+  round: BigInt,
+  user: Address
+): UserLottery {
   let id = user.toHex() + "-" + round.toString();
   let userLottery = UserLottery.load(id);
   if (userLottery == null) {
