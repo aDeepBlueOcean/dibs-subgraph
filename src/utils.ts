@@ -9,8 +9,7 @@ import {
   UserLottery,
 } from "../generated/schema";
 import { Dibs } from "../generated/TestRouter/Dibs";
-import { dataSource } from "@graphprotocol/graph-ts";
-import { TestPairFactory } from "../generated/TestRouter/TestPairFactory";
+import { PairFactory } from "../generated/Router/PairFactory";
 
 export const ZERO_ADDRESS = Address.fromHexString(
   "0x0000000000000000000000000000000000000000"
@@ -105,12 +104,12 @@ export function createSwapLog(event: Swap, lotteryRound: BigInt): void {
 
 export function getDIBS(): Dibs {
   return Dibs.bind(
-    Address.fromString("0x03fDbdcA199280dB975d213f663ef9D2D251D61f")
+    Address.fromString("0x04874d4087E3f611aC555d4Bc1F5BED7bd8B45a0")
   );
 }
 
-export function getPairFactory(): TestPairFactory {
-  return TestPairFactory.bind(
-    Address.fromString("0xa7F1BCa1F071923Cd27535ba40C2E8D44f157420")
+export function getPairFactory(): PairFactory {
+  return PairFactory.bind(
+    Address.fromString("0x27DfD2D7b85e0010542da35C6EBcD59E45fc949D")
   );
 }

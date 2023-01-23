@@ -3,12 +3,12 @@ schema:
   file: ./schema.graphql
 dataSources:
   - kind: ethereum
-    name: TestRouter
-    network: goerli
+    name: Router
+    network: bsc
     source:
-      address: "0x5D1eC97F6b58575CF859334F0e3679adD7a76872"
-      abi: TestRouter
-      startBlock: 7865061
+      address: "0x9B237893321b2D447E1D1Ae02004ebA30b187D0d"
+      abi: Router
+      startBlock: 23497978
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -16,12 +16,12 @@ dataSources:
       entities:
         - Swap
       abis:
-        - name: TestPairFactory
-          file: ./abis/TestPairFactory.json
+        - name: PairFactory
+          file: ./abis/PairFactory.json
         - name: Dibs
           file: ./abis/Dibs.json
-        - name: TestRouter
-          file: ./abis/TestRouter.json
+        - name: Router
+          file: ./abis/Router.json
       eventHandlers:
         - event: Swap(indexed address,uint256,address,indexed address)
           handler: handleSwap
