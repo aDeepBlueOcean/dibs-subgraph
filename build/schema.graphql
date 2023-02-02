@@ -14,6 +14,7 @@ type SwapLog @entity {
   tokenIn: Bytes!
   amountIn: BigInt!
   round: BigInt!
+  stable: Boolean!
   timestamp: BigInt!
 }
 
@@ -37,12 +38,19 @@ type Referral @entity {
 }
 
 type GeneratedVolume @entity {
-  id: ID! # tokenAddress + userAddress
+  id: ID! # tokenAddress
   user: Bytes!
-  token: Bytes!
   amountAsUser: BigInt!
   amountAsReferrer: BigInt!
   amountAsGrandparent: BigInt!
   lastUpdate: BigInt!
 }
 
+type AccumulativeGeneratedVolume @entity {
+  id: ID! # userAddress + timestamp
+  user: Bytes!
+  amountAsUser: BigInt!
+  amountAsReferrer: BigInt!
+  amountAsGrandparent: BigInt!
+  lastUpdate: BigInt!
+}

@@ -6,9 +6,9 @@ dataSources:
     name: Router
     network: bsc
     source:
-      address: "0x9B237893321b2D447E1D1Ae02004ebA30b187D0d"
-      abi: Router
-      startBlock: 23497978
+      address: "0xd4ae6eCA985340Dd434D38F470aCCce4DC78D109"
+      abi: RouterV2
+      startBlock: 25238657
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -20,9 +20,13 @@ dataSources:
           file: ./abis/PairFactory.json
         - name: Dibs
           file: ./abis/Dibs.json
-        - name: Router
-          file: ./abis/Router.json
+        - name: RouterV2
+          file: ./abis/RouterV2.json
+        - name: DibsLottery
+          file: ./abis/DibsLottery.json
+        - name: EACAggregatorProxy
+          file: ./abis/EACAggregatorProxy.json
       eventHandlers:
-        - event: Swap(indexed address,uint256,address,indexed address)
+        - event: Swap(indexed address,uint256,address,indexed address,bool)
           handler: handleSwap
       file: ./src/main.ts

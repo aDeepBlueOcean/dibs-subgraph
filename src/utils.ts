@@ -1,5 +1,5 @@
 import { Address, BigInt } from "@graphprotocol/graph-ts";
-import { Swap } from "../generated/TestRouter/TestRouter";
+import { Swap } from "../generated/Router/RouterV2";
 import {
   AccumulativeTokenBalance,
   Referral,
@@ -7,13 +7,23 @@ import {
   SwapLog,
   Lottery,
   UserLottery,
+  AccumulativeGeneratedVolume,
 } from "../generated/schema";
-import { Dibs } from "../generated/TestRouter/Dibs";
+import { Dibs } from "../generated/Router/Dibs";
 import { PairFactory } from "../generated/Router/PairFactory";
+import { DibsLottery } from "../generated/Router/DibsLottery";
+import { EACAggregatorProxy } from "../generated/Router/EACAggregatorProxy";
 
 export const ZERO_ADDRESS = Address.fromHexString(
   "0x0000000000000000000000000000000000000000"
 );
+
+export enum VolumeType {
+  USER,
+  PARENT,
+  GRANDPARENT,
+}
+
 export function addAccumulativeTokenBalance(
   token: Address,
   user: Address,
@@ -34,21 +44,74 @@ export function addAccumulativeTokenBalance(
   accumulativeTokenBalance.lastUpdate = timestamp;
   accumulativeTokenBalance.save();
 }
-export function getOrCreateGeneratedVolume(
-  token: Address,
-  user: Address
-): GeneratedVolume {
-  let id = token.toHex() + "-" + user.toHex();
+export function getOrCreateGeneratedVolume(user: Address): GeneratedVolume {
+  let id = user.toHex();
   let generatedVolume = GeneratedVolume.load(id);
   if (generatedVolume == null) {
     generatedVolume = new GeneratedVolume(id);
     generatedVolume.user = user;
-    generatedVolume.token = token;
     generatedVolume.amountAsUser = BigInt.fromI32(0);
     generatedVolume.amountAsReferrer = BigInt.fromI32(0);
     generatedVolume.amountAsGrandparent = BigInt.fromI32(0);
   }
   return generatedVolume as GeneratedVolume;
+}
+
+export function getOrCreateAccumulativeGeneratedVolume(
+  user: Address,
+  timestamp: BigInt
+): AccumulativeGeneratedVolume {
+  let id = user.toHex() + "-" + timestamp.toString();
+  let accumulativeGeneratedVolume = AccumulativeGeneratedVolume.load(id);
+  if (accumulativeGeneratedVolume == null) {
+    accumulativeGeneratedVolume = new AccumulativeGeneratedVolume(id);
+    accumulativeGeneratedVolume.user = user;
+    accumulativeGeneratedVolume.amountAsUser = BigInt.fromI32(0);
+    accumulativeGeneratedVolume.amountAsReferrer = BigInt.fromI32(0);
+    accumulativeGeneratedVolume.amountAsGrandparent = BigInt.fromI32(0);
+    accumulativeGeneratedVolume.lastUpdate = timestamp;
+  }
+  return accumulativeGeneratedVolume as AccumulativeGeneratedVolume;
+}
+
+export function updateVolume(
+  user: Address,
+  amount: BigInt,
+  timestamp: BigInt,
+  volumeType: VolumeType
+): void {
+  const generatedVolume = getOrCreateGeneratedVolume(user);
+  const accGeneratedVolume = getOrCreateAccumulativeGeneratedVolume(
+    user,
+    timestamp
+  );
+  if (volumeType == VolumeType.USER) {
+    generatedVolume.amountAsUser = generatedVolume.amountAsUser.plus(amount);
+    accGeneratedVolume.amountAsUser = accGeneratedVolume.amountAsUser.plus(
+      amount
+    );
+  } else if (volumeType == VolumeType.PARENT) {
+    generatedVolume.amountAsReferrer = generatedVolume.amountAsReferrer.plus(
+      amount
+    );
+    accGeneratedVolume.amountAsReferrer = accGeneratedVolume.amountAsReferrer.plus(
+      amount
+    );
+  } else if (volumeType == VolumeType.GRANDPARENT) {
+    generatedVolume.amountAsGrandparent = generatedVolume.amountAsGrandparent.plus(
+      amount
+    );
+    accGeneratedVolume.amountAsGrandparent = accGeneratedVolume.amountAsGrandparent.plus(
+      amount
+    );
+  }
+
+  // update timestamps
+  generatedVolume.lastUpdate = timestamp;
+  accGeneratedVolume.lastUpdate = timestamp;
+
+  generatedVolume.save();
+  accGeneratedVolume.save();
 }
 
 export function getOrCreateLottery(round: BigInt): Lottery {
@@ -98,18 +161,25 @@ export function createSwapLog(event: Swap, lotteryRound: BigInt): void {
   swap.tokenIn = event.params._tokenIn;
   swap.amountIn = event.params.amount0In;
   swap.round = lotteryRound;
+  swap.stable = event.params.stable;
   swap.timestamp = event.block.timestamp;
   swap.save();
 }
 
-export function getDIBS(): Dibs {
-  return Dibs.bind(
-    Address.fromString("0x04874d4087E3f611aC555d4Bc1F5BED7bd8B45a0")
+export function getBNBChainLink(): EACAggregatorProxy {
+  return EACAggregatorProxy.bind(
+    Address.fromString("0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE")
   );
 }
 
-export function getPairFactory(): PairFactory {
-  return PairFactory.bind(
-    Address.fromString("0x27DfD2D7b85e0010542da35C6EBcD59E45fc949D")
+export function getDIBS(): Dibs {
+  return Dibs.bind(
+    Address.fromString("0x664cE330511653cB2744b8eD50DbA31C6c4C08ca")
+  );
+}
+
+export function getDIBSLottery(): DibsLottery {
+  return DibsLottery.bind(
+    Address.fromString("0x287ed50e4c158dac38e1b7e16c50cd1b2551a300")
   );
 }

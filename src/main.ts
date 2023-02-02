@@ -1,5 +1,6 @@
 import { BigInt, Bytes } from "@graphprotocol/graph-ts";
-import { Swap } from "../generated/TestRouter/TestRouter";
+import { PairFactory } from "../generated/Router/PairFactory";
+import { RouterV2, Swap } from "../generated/Router/RouterV2";
 
 import {
   ZERO_ADDRESS,
@@ -8,9 +9,13 @@ import {
   createReferral,
   createSwapLog,
   getDIBS,
-  getPairFactory,
   getOrCreateLottery,
   getOrCreateUserLottery,
+  getDIBSLottery,
+  getBNBChainLink,
+  getOrCreateAccumulativeGeneratedVolume,
+  updateVolume,
+  VolumeType,
 } from "./utils";
 
 export function handleSwap(event: Swap): void {
@@ -21,9 +26,12 @@ export function handleSwap(event: Swap): void {
   let timestamp = event.block.timestamp;
 
   let dibs = getDIBS();
-  let pairFactory = getPairFactory();
+  let dibsLottery = getDIBSLottery();
+  let routerV2 = RouterV2.bind(event.address);
+  let pairFactory = PairFactory.bind(routerV2.factory());
+  let BNBChainLink = getBNBChainLink();
 
-  let round = dibs.getActiveLotteryRound();
+  let round = dibsLottery.getActiveLotteryRound();
 
   // check if user is registered in the dibs contracts
   // if not registered then return
@@ -46,8 +54,12 @@ export function handleSwap(event: Swap): void {
     grandParentAddress = dibs.codeToAddress(dibs.DIBS());
   }
   // calculate total amount of reward based on MAX_REFERRAL_FEE from pairFactory
+  let feeRate = pairFactory.getFee(event.params.stable);
+  let feeAmount = amount.times(feeRate).div(BigInt.fromI32(10000));
   let rewardPercentage = pairFactory.MAX_REFERRAL_FEE();
-  let rewardAmount = amount.times(rewardPercentage).div(BigInt.fromI32(10000));
+  let rewardAmount = feeAmount
+    .times(rewardPercentage)
+    .div(BigInt.fromI32(10000));
 
   // calculate the amount of tokens that the parent and grandparent and dibs platform will receive
   let scale = dibs.SCALE();
@@ -55,7 +67,8 @@ export function handleSwap(event: Swap): void {
   let dibsPercentage = dibs.dibsPercentage();
   let grandParentAmount = rewardAmount.times(grandParentPercentage).div(scale);
   let dibsAmount = rewardAmount.times(dibsPercentage).div(scale);
-  let parentAmount = rewardAmount.minus(grandParentAmount).minus(dibsAmount);
+  let parentAmount = rewardAmount.minus(grandParentAmount.plus(dibsAmount));
+
   // add the reward amount to the accumulative token balance for the parent, grandparent and dibs platform
   addAccumulativeTokenBalance(token, parentAddress, parentAmount, timestamp);
   addAccumulativeTokenBalance(
@@ -70,39 +83,35 @@ export function handleSwap(event: Swap): void {
     dibsAmount,
     timestamp
   );
-  // add the amount of tokens that the user has generated to the generated volume
-  let generatedVolume = getOrCreateGeneratedVolume(token, user);
-  generatedVolume.amountAsUser = generatedVolume.amountAsUser.plus(amount);
-  generatedVolume.lastUpdate = timestamp;
-  generatedVolume.save();
-  // add the amount of tokens that the parent has generated to the generated volume
-  let parentGeneratedVolume = getOrCreateGeneratedVolume(token, parentAddress);
-  parentGeneratedVolume.amountAsReferrer = parentGeneratedVolume.amountAsReferrer.plus(
-    amount
+
+  // get volume in BNB
+  let volumeInBNB = routerV2.getAmountOut(amount, token, routerV2.wETH())
+    .value0;
+  let volumeInDollars = BNBChainLink.latestAnswer()
+    .times(volumeInBNB)
+    .div(BigInt.fromI32(10).pow(8));
+
+  // update generated volume for user, parent and grandparent
+  updateVolume(user, volumeInDollars, timestamp, VolumeType.USER);
+  updateVolume(parentAddress, volumeInDollars, timestamp, VolumeType.PARENT);
+  updateVolume(
+    grandParentAddress,
+    volumeInDollars,
+    timestamp,
+    VolumeType.GRANDPARENT
   );
-  parentGeneratedVolume.lastUpdate = timestamp;
-  parentGeneratedVolume.save();
-  // add the amount of tokens that the grandparent has generated to the generated volume
-  let grandParentGeneratedVolume = getOrCreateGeneratedVolume(
-    token,
-    grandParentAddress
-  );
-  grandParentGeneratedVolume.amountAsGrandparent = grandParentGeneratedVolume.amountAsGrandparent.plus(
-    amount
-  );
-  grandParentGeneratedVolume.lastUpdate = timestamp;
-  grandParentGeneratedVolume.save();
+
   // create a referral if it does not exist
   createReferral(parentAddress, user);
   createSwapLog(event, round);
 
-  let lottery = getOrCreateLottery(round);
-  let userLottery = getOrCreateUserLottery(round, user);
-  let tickets = BigInt.fromI32(1);
+  // let lottery = getOrCreateLottery(round);
+  // let userLottery = getOrCreateUserLottery(round, user);
+  // let tickets = BigInt.fromI32(1);
 
-  userLottery.tickets = userLottery.tickets.plus(tickets);
-  userLottery.save();
+  // userLottery.tickets = userLottery.tickets.plus(tickets);
+  // userLottery.save();
 
-  lottery.totalTikets = lottery.totalTikets.plus(tickets);
-  lottery.save();
+  // lottery.totalTikets = lottery.totalTikets.plus(tickets);
+  // lottery.save();
 }
