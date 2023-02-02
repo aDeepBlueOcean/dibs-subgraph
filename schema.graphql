@@ -38,7 +38,7 @@ type Referral @entity {
 }
 
 type GeneratedVolume @entity {
-  id: ID! # tokenAddress
+  id: ID! # user
   user: Bytes!
   amountAsUser: BigInt!
   amountAsReferrer: BigInt!

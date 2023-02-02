@@ -183,3 +183,36 @@ export function getDIBSLottery(): DibsLottery {
     Address.fromString("0x287ed50e4c158dac38e1b7e16c50cd1b2551a300")
   );
 }
+
+function e18(amount: BigInt): BigInt {
+  const E18 = BigInt.fromI32(10).pow(18);
+  return amount.times(E18);
+}
+
+export function getRewardPercentage(volume: BigInt): BigInt {
+  if (volume <= e18(BigInt.fromString("30000"))) {
+    return BigInt.fromI32(500);
+  } else if (volume <= e18(BigInt.fromString("150000"))) {
+    return BigInt.fromI32(650);
+  } else if (volume <= e18(BigInt.fromString("1000000"))) {
+    return BigInt.fromI32(800);
+  } else if (volume <= e18(BigInt.fromString("10000000"))) {
+    return BigInt.fromI32(1000);
+  } else {
+    return BigInt.fromI32(1200);
+  }
+}
+
+export function getNumberOfTickets(volume: BigInt): BigInt {
+  if (volume <= e18(BigInt.fromString("300"))) {
+    return BigInt.fromI32(0);
+  } else if (volume <= e18(BigInt.fromString("3000"))) {
+    return BigInt.fromI32(2);
+  } else if (volume <= e18(BigInt.fromString("30000"))) {
+    return BigInt.fromI32(5);
+  } else if (volume <= e18(BigInt.fromString("150000"))) {
+    return BigInt.fromI32(10);
+  } else {
+    return BigInt.fromI32(15);
+  }
+}

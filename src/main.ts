@@ -16,6 +16,8 @@ import {
   getOrCreateAccumulativeGeneratedVolume,
   updateVolume,
   VolumeType,
+  getRewardPercentage,
+  getNumberOfTickets,
 } from "./utils";
 
 export function handleSwap(event: Swap): void {
@@ -53,10 +55,30 @@ export function handleSwap(event: Swap): void {
   if (grandParentAddress == ZERO_ADDRESS) {
     grandParentAddress = dibs.codeToAddress(dibs.DIBS());
   }
+
+  // get volume in BNB
+  let volumeInBNB = routerV2.getAmountOut(amount, token, routerV2.wETH())
+    .value0;
+  let volumeInDollars = BNBChainLink.latestAnswer()
+    .times(volumeInBNB)
+    .div(BigInt.fromI32(10).pow(8));
+
+  // update generated volume for user, parent and grandparent
+  updateVolume(user, volumeInDollars, timestamp, VolumeType.USER);
+  updateVolume(parentAddress, volumeInDollars, timestamp, VolumeType.PARENT);
+  updateVolume(
+    grandParentAddress,
+    volumeInDollars,
+    timestamp,
+    VolumeType.GRANDPARENT
+  );
+
   // calculate total amount of reward based on MAX_REFERRAL_FEE from pairFactory
   let feeRate = pairFactory.getFee(event.params.stable);
   let feeAmount = amount.times(feeRate).div(BigInt.fromI32(10000));
-  let rewardPercentage = pairFactory.MAX_REFERRAL_FEE();
+  let rewardPercentage = getRewardPercentage(
+    getOrCreateGeneratedVolume(parentAddress).amountAsReferrer
+  );
   let rewardAmount = feeAmount
     .times(rewardPercentage)
     .div(BigInt.fromI32(10000));
@@ -84,34 +106,17 @@ export function handleSwap(event: Swap): void {
     timestamp
   );
 
-  // get volume in BNB
-  let volumeInBNB = routerV2.getAmountOut(amount, token, routerV2.wETH())
-    .value0;
-  let volumeInDollars = BNBChainLink.latestAnswer()
-    .times(volumeInBNB)
-    .div(BigInt.fromI32(10).pow(8));
-
-  // update generated volume for user, parent and grandparent
-  updateVolume(user, volumeInDollars, timestamp, VolumeType.USER);
-  updateVolume(parentAddress, volumeInDollars, timestamp, VolumeType.PARENT);
-  updateVolume(
-    grandParentAddress,
-    volumeInDollars,
-    timestamp,
-    VolumeType.GRANDPARENT
-  );
-
   // create a referral if it does not exist
   createReferral(parentAddress, user);
   createSwapLog(event, round);
 
-  // let lottery = getOrCreateLottery(round);
-  // let userLottery = getOrCreateUserLottery(round, user);
-  // let tickets = BigInt.fromI32(1);
+  let lottery = getOrCreateLottery(round);
+  let userLottery = getOrCreateUserLottery(round, user);
+  let tickets = getNumberOfTickets(volumeInDollars);
 
-  // userLottery.tickets = userLottery.tickets.plus(tickets);
-  // userLottery.save();
+  userLottery.tickets = userLottery.tickets.plus(tickets);
+  userLottery.save();
 
-  // lottery.totalTikets = lottery.totalTikets.plus(tickets);
-  // lottery.save();
+  lottery.totalTikets = lottery.totalTikets.plus(tickets);
+  lottery.save();
 }
