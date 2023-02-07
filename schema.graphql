@@ -46,6 +46,16 @@ type GeneratedVolume @entity {
   lastUpdate: BigInt!
 }
 
+type WeeklyGeneratedVolume @entity {
+  id: ID! # user - round (epoch)
+  user: Bytes!
+  amountAsUser: BigInt!
+  amountAsReferrer: BigInt!
+  amountAsGrandparent: BigInt!
+  lastUpdate: BigInt!
+  epoch: BigInt!
+}
+
 type AccumulativeGeneratedVolume @entity {
   id: ID! # userAddress + timestamp
   user: Bytes!

@@ -13,7 +13,6 @@ import {
   getOrCreateUserLottery,
   getDIBSLottery,
   getBNBChainLink,
-  getOrCreateAccumulativeGeneratedVolume,
   updateVolume,
   VolumeType,
   getRewardPercentage,
@@ -57,8 +56,14 @@ export function handleSwap(event: Swap): void {
   }
 
   // get volume in BNB
-  let volumeInBNB = routerV2.getAmountOut(amount, token, routerV2.wETH())
-    .value0;
+  let volumeInBNB: BigInt;
+
+  if (token == routerV2.wETH()) {
+    volumeInBNB = amount;
+  } else {
+    volumeInBNB = routerV2.getAmountOut(amount, token, routerV2.wETH()).value0;
+  }
+
   let volumeInDollars = BNBChainLink.latestAnswer()
     .times(volumeInBNB)
     .div(BigInt.fromI32(10).pow(8));

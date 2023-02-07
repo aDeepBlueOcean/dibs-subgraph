@@ -8,15 +8,21 @@ import {
   Lottery,
   UserLottery,
   AccumulativeGeneratedVolume,
+  WeeklyGeneratedVolume,
 } from "../generated/schema";
 import { Dibs } from "../generated/Router/Dibs";
-import { PairFactory } from "../generated/Router/PairFactory";
 import { DibsLottery } from "../generated/Router/DibsLottery";
 import { EACAggregatorProxy } from "../generated/Router/EACAggregatorProxy";
 
 export const ZERO_ADDRESS = Address.fromHexString(
   "0x0000000000000000000000000000000000000000"
 );
+export const EPOCH_START_TIMESTAMP = BigInt.fromI32(1673481600);
+export const EPOCH_LENGTH = BigInt.fromI32(604800);
+
+export function getRound(timestamp: BigInt): BigInt {
+  return timestamp.minus(EPOCH_START_TIMESTAMP).div(EPOCH_LENGTH);
+}
 
 export enum VolumeType {
   USER,
@@ -74,6 +80,23 @@ export function getOrCreateAccumulativeGeneratedVolume(
   return accumulativeGeneratedVolume as AccumulativeGeneratedVolume;
 }
 
+export function getOrCreateWeeklyGeneratedVolume(
+  user: Address,
+  epoch: BigInt
+): WeeklyGeneratedVolume {
+  let id = user.toHex() + "-" + epoch.toString();
+  let weeklyGeneratedVolume = WeeklyGeneratedVolume.load(id);
+  if (weeklyGeneratedVolume == null) {
+    weeklyGeneratedVolume = new WeeklyGeneratedVolume(id);
+    weeklyGeneratedVolume.user = user;
+    weeklyGeneratedVolume.amountAsUser = BigInt.fromI32(0);
+    weeklyGeneratedVolume.amountAsReferrer = BigInt.fromI32(0);
+    weeklyGeneratedVolume.amountAsGrandparent = BigInt.fromI32(0);
+    weeklyGeneratedVolume.epoch = epoch;
+  }
+  return weeklyGeneratedVolume;
+}
+
 export function updateVolume(
   user: Address,
   amount: BigInt,
@@ -85,33 +108,44 @@ export function updateVolume(
     user,
     timestamp
   );
+  const accWeeklyGeneratedVolume = getOrCreateWeeklyGeneratedVolume(
+    user,
+    getRound(timestamp)
+  );
   if (volumeType == VolumeType.USER) {
     generatedVolume.amountAsUser = generatedVolume.amountAsUser.plus(amount);
-    accGeneratedVolume.amountAsUser = accGeneratedVolume.amountAsUser.plus(
+    accWeeklyGeneratedVolume.amountAsUser = accWeeklyGeneratedVolume.amountAsUser.plus(
       amount
     );
   } else if (volumeType == VolumeType.PARENT) {
     generatedVolume.amountAsReferrer = generatedVolume.amountAsReferrer.plus(
       amount
     );
-    accGeneratedVolume.amountAsReferrer = accGeneratedVolume.amountAsReferrer.plus(
+    accWeeklyGeneratedVolume.amountAsReferrer = accWeeklyGeneratedVolume.amountAsReferrer.plus(
       amount
     );
   } else if (volumeType == VolumeType.GRANDPARENT) {
     generatedVolume.amountAsGrandparent = generatedVolume.amountAsGrandparent.plus(
       amount
     );
-    accGeneratedVolume.amountAsGrandparent = accGeneratedVolume.amountAsGrandparent.plus(
+    accWeeklyGeneratedVolume.amountAsGrandparent = accWeeklyGeneratedVolume.amountAsGrandparent.plus(
       amount
     );
   }
 
+  // set accGeneratedVolume fields from generated volume
+  accGeneratedVolume.amountAsUser = generatedVolume.amountAsUser;
+  accGeneratedVolume.amountAsReferrer = generatedVolume.amountAsReferrer;
+  accGeneratedVolume.amountAsGrandparent = generatedVolume.amountAsGrandparent;
+
   // update timestamps
+  accWeeklyGeneratedVolume.lastUpdate = timestamp;
   generatedVolume.lastUpdate = timestamp;
   accGeneratedVolume.lastUpdate = timestamp;
 
   generatedVolume.save();
   accGeneratedVolume.save();
+  accWeeklyGeneratedVolume.save();
 }
 
 export function getOrCreateLottery(round: BigInt): Lottery {
