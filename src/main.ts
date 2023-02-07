@@ -17,6 +17,7 @@ import {
   VolumeType,
   getRewardPercentage,
   getNumberOfTickets,
+  getOrCreateWeeklyGeneratedVolume,
 } from "./utils";
 
 export function handleSwap(event: Swap): void {
@@ -117,7 +118,9 @@ export function handleSwap(event: Swap): void {
 
   let lottery = getOrCreateLottery(round);
   let userLottery = getOrCreateUserLottery(round, user);
-  let tickets = getNumberOfTickets(volumeInDollars);
+  let tickets = getNumberOfTickets(
+    getOrCreateWeeklyGeneratedVolume(user, round).amountAsUser
+  );
 
   userLottery.tickets = userLottery.tickets.plus(tickets);
   userLottery.save();
