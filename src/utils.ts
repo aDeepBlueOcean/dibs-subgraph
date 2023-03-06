@@ -9,6 +9,7 @@ import {
   UserLottery,
   AccumulativeGeneratedVolume,
   WeeklyGeneratedVolume,
+  DailyGeneratedVolume,
 } from "../generated/schema";
 import { Dibs } from "../generated/Router/Dibs";
 import { DibsLottery } from "../generated/Router/DibsLottery";
@@ -22,6 +23,10 @@ export const EPOCH_LENGTH = BigInt.fromI32(604800);
 
 export function getRound(timestamp: BigInt): BigInt {
   return timestamp.minus(EPOCH_START_TIMESTAMP).div(EPOCH_LENGTH);
+}
+
+export function getDay(timestamp: BigInt): BigInt {
+  return timestamp.minus(EPOCH_START_TIMESTAMP).div(BigInt.fromI32(86400));
 }
 
 export enum VolumeType {
@@ -97,6 +102,22 @@ export function getOrCreateWeeklyGeneratedVolume(
   return weeklyGeneratedVolume;
 }
 
+export function getOrCreateDailyGeneratedVolume(
+  user: Address,
+  day: BigInt
+): DailyGeneratedVolume {
+  let id = user.toHex() + "-" + day.toString();
+  let dailyGeneratedVolume = DailyGeneratedVolume.load(id);
+  if (dailyGeneratedVolume == null) {
+    dailyGeneratedVolume = new DailyGeneratedVolume(id);
+    dailyGeneratedVolume.user = user;
+    dailyGeneratedVolume.amountAsUser = BigInt.fromI32(0);
+    dailyGeneratedVolume.amountAsReferrer = BigInt.fromI32(0);
+    dailyGeneratedVolume.amountAsGrandparent = BigInt.fromI32(0);
+    dailyGeneratedVolume.day = day;
+  }
+  return dailyGeneratedVolume;
+}
 export function updateVolume(
   user: Address,
   amount: BigInt,
@@ -104,17 +125,20 @@ export function updateVolume(
   volumeType: VolumeType
 ): void {
   const generatedVolume = getOrCreateGeneratedVolume(user);
-  const accGeneratedVolume = getOrCreateAccumulativeGeneratedVolume(
-    user,
-    timestamp
-  );
   const accWeeklyGeneratedVolume = getOrCreateWeeklyGeneratedVolume(
     user,
     getRound(timestamp)
   );
+  const accDailyGeneratedVolume = getOrCreateDailyGeneratedVolume(
+    user,
+    getDay(timestamp)
+  );
   if (volumeType == VolumeType.USER) {
     generatedVolume.amountAsUser = generatedVolume.amountAsUser.plus(amount);
     accWeeklyGeneratedVolume.amountAsUser = accWeeklyGeneratedVolume.amountAsUser.plus(
+      amount
+    );
+    accDailyGeneratedVolume.amountAsUser = accDailyGeneratedVolume.amountAsUser.plus(
       amount
     );
   } else if (volumeType == VolumeType.PARENT) {
@@ -124,6 +148,9 @@ export function updateVolume(
     accWeeklyGeneratedVolume.amountAsReferrer = accWeeklyGeneratedVolume.amountAsReferrer.plus(
       amount
     );
+    accDailyGeneratedVolume.amountAsReferrer = accDailyGeneratedVolume.amountAsReferrer.plus(
+      amount
+    );
   } else if (volumeType == VolumeType.GRANDPARENT) {
     generatedVolume.amountAsGrandparent = generatedVolume.amountAsGrandparent.plus(
       amount
@@ -131,21 +158,19 @@ export function updateVolume(
     accWeeklyGeneratedVolume.amountAsGrandparent = accWeeklyGeneratedVolume.amountAsGrandparent.plus(
       amount
     );
+    accDailyGeneratedVolume.amountAsGrandparent = accDailyGeneratedVolume.amountAsGrandparent.plus(
+      amount
+    );
   }
-
-  // set accGeneratedVolume fields from generated volume
-  accGeneratedVolume.amountAsUser = generatedVolume.amountAsUser;
-  accGeneratedVolume.amountAsReferrer = generatedVolume.amountAsReferrer;
-  accGeneratedVolume.amountAsGrandparent = generatedVolume.amountAsGrandparent;
 
   // update timestamps
   accWeeklyGeneratedVolume.lastUpdate = timestamp;
   generatedVolume.lastUpdate = timestamp;
-  accGeneratedVolume.lastUpdate = timestamp;
+  accDailyGeneratedVolume.lastUpdate = timestamp;
 
   generatedVolume.save();
-  accGeneratedVolume.save();
   accWeeklyGeneratedVolume.save();
+  accDailyGeneratedVolume.save();
 }
 
 export function getOrCreateLottery(round: BigInt): Lottery {
@@ -184,7 +209,13 @@ export function createReferral(referrer: Address, user: Address): void {
     referral.save();
   }
 }
-export function createSwapLog(event: Swap, lotteryRound: BigInt): void {
+export function createSwapLog(
+  event: Swap,
+  lotteryRound: BigInt,
+  volumeInBNB: BigInt,
+  BNBPrice: BigInt,
+  volumeInDollars: BigInt
+): void {
   // log the swap itself
   let swap = new SwapLog(
     event.transaction.hash.toHex() + "-" + event.logIndex.toString()
@@ -194,6 +225,9 @@ export function createSwapLog(event: Swap, lotteryRound: BigInt): void {
   swap.user = event.params.sender;
   swap.tokenIn = event.params._tokenIn;
   swap.amountIn = event.params.amount0In;
+  swap.volumeInBNB = volumeInBNB;
+  swap.BNBPrice = BNBPrice;
+  swap.volumeInDollars = volumeInDollars;
   swap.round = lotteryRound;
   swap.stable = event.params.stable;
   swap.timestamp = event.block.timestamp;

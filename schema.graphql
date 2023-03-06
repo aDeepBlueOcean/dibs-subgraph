@@ -13,10 +13,14 @@ type SwapLog @entity {
   user: Bytes!
   tokenIn: Bytes!
   amountIn: BigInt!
+  volumeInBNB: BigInt!
+  BNBPrice: BigInt!
+  volumeInDollars: BigInt!
   round: BigInt!
   stable: Boolean!
   timestamp: BigInt!
 }
+
 
 type Lottery @entity {
   id: ID! # round
@@ -56,6 +60,16 @@ type WeeklyGeneratedVolume @entity {
   epoch: BigInt!
 }
 
+type DailyGeneratedVolume @entity {
+  id: ID! # user - round (day)
+  user: Bytes!
+  amountAsUser: BigInt!
+  amountAsReferrer: BigInt!
+  amountAsGrandparent: BigInt!
+  lastUpdate: BigInt!
+  day: BigInt!
+}
+
 type AccumulativeGeneratedVolume @entity {
   id: ID! # userAddress + timestamp
   user: Bytes!
@@ -63,4 +77,28 @@ type AccumulativeGeneratedVolume @entity {
   amountAsReferrer: BigInt!
   amountAsGrandparent: BigInt!
   lastUpdate: BigInt!
+}
+
+type PairEdge @entity {
+  id: ID! # pair address
+  token0: Bytes!
+  token1: Bytes!
+  stable: Boolean!
+}
+
+type TokenToEdge @entity {
+  id: ID! # token
+  edges: [PairEdge!]! # list of direct edges
+}
+
+type PairTree @entity {
+  id: ID! # constant set to PAIR_TREE
+  edges: [PairEdge!]!
+}
+
+type PathToTarget @entity {
+  id: ID! # token address + target
+  token: Bytes!
+  target: Bytes!
+  path: [Bytes!]! # path of pairs
 }

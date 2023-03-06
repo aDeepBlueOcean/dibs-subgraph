@@ -1,5 +1,6 @@
-import { BigInt, Bytes } from "@graphprotocol/graph-ts";
+import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts";
 import { PairFactory } from "../generated/Router/PairFactory";
+import { ERC20 } from "../generated/Router/ERC20";
 import { RouterV2, Swap } from "../generated/Router/RouterV2";
 
 import {
@@ -28,6 +29,7 @@ export function handleSwap(event: Swap): void {
   let timestamp = event.block.timestamp;
 
   let dibs = getDIBS();
+  let inputToken = ERC20.bind(token);
   let dibsLottery = getDIBSLottery();
   let routerV2 = RouterV2.bind(event.address);
   let pairFactory = PairFactory.bind(routerV2.factory());
@@ -59,15 +61,26 @@ export function handleSwap(event: Swap): void {
   // get volume in BNB
   let volumeInBNB: BigInt;
 
+  const precision = 4;
+
   if (token == routerV2.wETH()) {
     volumeInBNB = amount;
   } else {
-    volumeInBNB = routerV2.getAmountOut(amount, token, routerV2.wETH()).value0;
+    volumeInBNB = routerV2
+      .getAmountOut(
+        BigInt.fromI32(10).pow(u8(inputToken.decimals() - precision)), // 0.0001 unit of the input token
+        token,
+        routerV2.wETH()
+      )
+      .value0.times(amount)
+      .div(BigInt.fromI32(10).pow(u8(inputToken.decimals() - precision))); // time the amount of input token
   }
 
-  let volumeInDollars = BNBChainLink.latestAnswer()
-    .times(volumeInBNB)
-    .div(BigInt.fromI32(10).pow(8));
+  let BNBPrice = BNBChainLink.latestAnswer();
+
+  let volumeInDollars = BNBPrice.times(volumeInBNB).div(
+    BigInt.fromI32(10).pow(8)
+  );
 
   // update generated volume for user, parent and grandparent
   updateVolume(user, volumeInDollars, timestamp, VolumeType.USER);
@@ -114,7 +127,7 @@ export function handleSwap(event: Swap): void {
 
   // create a referral if it does not exist
   createReferral(parentAddress, user);
-  createSwapLog(event, round);
+  createSwapLog(event, round, volumeInBNB, BNBPrice, volumeInDollars);
 
   let lottery = getOrCreateLottery(round);
   let userLottery = getOrCreateUserLottery(round, user);
@@ -122,9 +135,10 @@ export function handleSwap(event: Swap): void {
     getOrCreateWeeklyGeneratedVolume(user, round).amountAsUser
   );
 
-  userLottery.tickets = userLottery.tickets.plus(tickets);
-  userLottery.save();
-
-  lottery.totalTikets = lottery.totalTikets.plus(tickets);
-  lottery.save();
+  if (tickets > userLottery.tickets) {
+    userLottery.tickets = tickets;
+    lottery.totalTikets = lottery.totalTikets.plus(tickets);
+    userLottery.save();
+    lottery.save();
+  }
 }
