@@ -8,7 +8,7 @@ dataSources:
     source:
       address: "0xAFD89d21BdB66d00817d4153E055830B1c2B3970"
       abi: PairFactory
-      startBlock: 25238657
+      startBlock: 24468802
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -18,6 +18,8 @@ dataSources:
       abis:
         - name: PairFactory
           file: PairFactoryUpgradeable/abis/PairFactory.json
+        - name: Pair
+          file: PairFactoryUpgradeable/abis/Pair.json
       eventHandlers:
         - event: PairCreated(indexed address,indexed address,bool,address,uint256)
           handler: handlePairCreated

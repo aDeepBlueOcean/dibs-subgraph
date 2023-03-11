@@ -21,7 +21,6 @@ type SwapLog @entity {
   timestamp: BigInt!
 }
 
-
 type Lottery @entity {
   id: ID! # round
   totalTikets: BigInt!
@@ -79,21 +78,21 @@ type AccumulativeGeneratedVolume @entity {
   lastUpdate: BigInt!
 }
 
-type PairEdge @entity {
+type Pair @entity {
   id: ID! # pair address
   token0: Bytes!
   token1: Bytes!
   stable: Boolean!
 }
 
-type TokenToEdge @entity {
+type TokenToPair @entity {
   id: ID! # token
-  edges: [PairEdge!]! # list of direct edges
+  pairs: [Pair!]! # list of direct pairs
 }
 
-type PairTree @entity {
-  id: ID! # constant set to PAIR_TREE
-  edges: [PairEdge!]!
+type TokenData @entity {
+  id: ID! # TOKEN_DATA
+  tokens: [Bytes!]! # list of all tokens
 }
 
 type PathToTarget @entity {
