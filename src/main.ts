@@ -83,7 +83,7 @@ export function handleSwap(event: Swap): void {
           unit, // 0.0001 unit of the input token
           routeToBNB
         )
-        .pop();
+        .pop(); // last price
     } else {
       // no route to wETH
       unitVolumeInBNB = BigInt.fromI32(0);
