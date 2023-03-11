@@ -1,5 +1,8 @@
-import { Address, BigInt } from "@graphprotocol/graph-ts";
-import { Swap } from "../generated/Router/RouterV2";
+import { Address, BigInt, ethereum } from "@graphprotocol/graph-ts";
+import {
+  RouterV2__getAmountsOutInputRoutesStruct,
+  Swap,
+} from "../generated/Router/RouterV2";
 import {
   AccumulativeTokenBalance,
   Referral,
@@ -10,6 +13,8 @@ import {
   AccumulativeGeneratedVolume,
   WeeklyGeneratedVolume,
   DailyGeneratedVolume,
+  PathToTarget,
+  Pair,
 } from "../generated/schema";
 import { Dibs } from "../generated/Router/Dibs";
 import { DibsLottery } from "../generated/Router/DibsLottery";
@@ -255,6 +260,35 @@ export function getDIBSLottery(): DibsLottery {
 function e18(amount: BigInt): BigInt {
   const E18 = BigInt.fromI32(10).pow(18);
   return amount.times(E18);
+}
+
+export function getRoutes(
+  token: Address,
+  target: Address
+): Array<RouterV2__getAmountsOutInputRoutesStruct> {
+  const pathToTarget = PathToTarget.load(token.toHex() + "-" + target.toHex());
+  if (pathToTarget == null) {
+    return [];
+  } else {
+    const routes: Array<RouterV2__getAmountsOutInputRoutesStruct> = new Array();
+    let inToken = token;
+    for (let i = 0; i < pathToTarget.path.length; i++) {
+      const pairAddress = pathToTarget.path[i];
+      const pair = Pair.load(pairAddress.toHex())!;
+      const otherToken = inToken.equals(pair.token0)
+        ? Address.fromBytes(pair.token1)
+        : Address.fromBytes(pair.token0);
+
+      const route: RouterV2__getAmountsOutInputRoutesStruct = new RouterV2__getAmountsOutInputRoutesStruct();
+      route.push(ethereum.Value.fromAddress(inToken));
+      route.push(ethereum.Value.fromAddress(otherToken));
+      route.push(ethereum.Value.fromBoolean(pair.stable));
+      routes.push(route);
+
+      inToken = otherToken;
+    }
+    return routes;
+  }
 }
 
 export function getRewardPercentage(volume: BigInt): BigInt {

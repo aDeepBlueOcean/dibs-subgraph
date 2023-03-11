@@ -1,7 +1,11 @@
-import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts";
+import { BigInt, Bytes, ethereum } from "@graphprotocol/graph-ts";
 import { PairFactory } from "../generated/Router/PairFactory";
 import { ERC20 } from "../generated/Router/ERC20";
-import { RouterV2, Swap } from "../generated/Router/RouterV2";
+import {
+  RouterV2,
+  RouterV2__getAmountsOutInputRoutesStruct,
+  Swap,
+} from "../generated/Router/RouterV2";
 
 import {
   ZERO_ADDRESS,
@@ -19,6 +23,7 @@ import {
   getRewardPercentage,
   getNumberOfTickets,
   getOrCreateWeeklyGeneratedVolume,
+  getRoutes,
 } from "./utils";
 
 export function handleSwap(event: Swap): void {
@@ -64,16 +69,26 @@ export function handleSwap(event: Swap): void {
   const precision = 4;
 
   if (token == routerV2.wETH()) {
+    // if input token is wETH, no need to make conversions
     volumeInBNB = amount;
   } else {
-    volumeInBNB = routerV2
-      .getAmountOut(
-        BigInt.fromI32(10).pow(u8(inputToken.decimals() - precision)), // 0.0001 unit of the input token
-        token,
-        routerV2.wETH()
-      )
-      .value0.times(amount)
-      .div(BigInt.fromI32(10).pow(u8(inputToken.decimals() - precision))); // time the amount of input token
+    // in case input token is not wETH
+    const unit = BigInt.fromI32(10).pow(u8(inputToken.decimals() - precision));
+    let unitVolumeInBNB: BigInt;
+    const routeToBNB = getRoutes(token, routerV2.wETH());
+    if (routeToBNB.length > 0) {
+      // if there is a rout from input token to wETH
+      unitVolumeInBNB = routerV2
+        .getAmountsOut(
+          unit, // 0.0001 unit of the input token
+          routeToBNB
+        )
+        .pop();
+    } else {
+      // no route to wETH
+      unitVolumeInBNB = BigInt.fromI32(0);
+    }
+    volumeInBNB = unitVolumeInBNB.times(amount).div(unit); // time the amount of input token
   }
 
   let BNBPrice = BNBChainLink.latestAnswer();
