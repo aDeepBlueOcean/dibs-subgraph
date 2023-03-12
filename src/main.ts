@@ -1,11 +1,7 @@
 import { BigInt, Bytes, ethereum } from "@graphprotocol/graph-ts";
 import { PairFactory } from "../generated/Router/PairFactory";
 import { ERC20 } from "../generated/Router/ERC20";
-import {
-  RouterV2,
-  RouterV2__getAmountsOutInputRoutesStruct,
-  Swap,
-} from "../generated/Router/RouterV2";
+import { RouterV2, Swap } from "../generated/Router/RouterV2";
 
 import {
   ZERO_ADDRESS,
@@ -24,6 +20,7 @@ import {
   getNumberOfTickets,
   getOrCreateWeeklyGeneratedVolume,
   getRoutes,
+  getOrCreateDailyGeneratedVolume,
 } from "./utils";
 
 export function handleSwap(event: Swap): void {
@@ -43,7 +40,7 @@ export function handleSwap(event: Swap): void {
   let round = dibsLottery.getActiveLotteryRound();
 
   // check if user is registered in the dibs contracts
-  // if not registered then return
+  // then return
   let userCode = dibs.addressToCode(user);
   if (userCode == Bytes.empty()) {
     return;
@@ -53,12 +50,12 @@ export function handleSwap(event: Swap): void {
   // we can get the parent and grandparent address
   let parentAddress = dibs.parents(user);
   let grandParentAddress = dibs.parents(parentAddress);
-  // if the grandparent address is address 0x0, set grandparent address to dibs address
 
   if (parentAddress == ZERO_ADDRESS) {
     return;
   }
 
+  // if the grandparent address is address 0x0, set grandparent address to dibs address
   if (grandParentAddress == ZERO_ADDRESS) {
     grandParentAddress = dibs.codeToAddress(dibs.DIBS());
   }
@@ -144,15 +141,17 @@ export function handleSwap(event: Swap): void {
   createReferral(parentAddress, user);
   createSwapLog(event, round, volumeInBNB, BNBPrice, volumeInDollars);
 
-  let lottery = getOrCreateLottery(round);
-  let userLottery = getOrCreateUserLottery(round, user);
-  let tickets = getNumberOfTickets(
-    getOrCreateWeeklyGeneratedVolume(user, round).amountAsUser
+  const lottery = getOrCreateLottery(round);
+  const userLottery = getOrCreateUserLottery(round, user);
+  const tickets = getNumberOfTickets(
+    getOrCreateDailyGeneratedVolume(user, round).amountAsUser
   );
 
-  if (tickets > userLottery.tickets) {
+  const addedTickets = tickets.minus(userLottery.tickets);
+
+  if (addedTickets.gt(BigInt.fromI32(0))) {
     userLottery.tickets = tickets;
-    lottery.totalTikets = lottery.totalTikets.plus(tickets);
+    lottery.totalTikets = lottery.totalTikets.plus(addedTickets);
     userLottery.save();
     lottery.save();
   }
