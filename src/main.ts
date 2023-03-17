@@ -144,7 +144,7 @@ export function handleSwap(event: Swap): void {
   const lottery = getOrCreateLottery(round);
   const userLottery = getOrCreateUserLottery(round, user);
   const tickets = getNumberOfTickets(
-    getOrCreateDailyGeneratedVolume(user, round).amountAsUser
+    getOrCreateWeeklyGeneratedVolume(user, round).amountAsUser
   );
 
   const addedTickets = tickets.minus(userLottery.tickets);
