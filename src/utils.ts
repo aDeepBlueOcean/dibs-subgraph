@@ -306,15 +306,9 @@ export function getRewardPercentage(volume: BigInt): BigInt {
 }
 
 export function getNumberOfTickets(volume: BigInt): BigInt {
-  if (volume <= e18(BigInt.fromString("300"))) {
+  if (volume <= e18(BigInt.fromString("500"))) {
     return BigInt.fromI32(0);
-  } else if (volume <= e18(BigInt.fromString("3000"))) {
-    return BigInt.fromI32(2);
-  } else if (volume <= e18(BigInt.fromString("30000"))) {
-    return BigInt.fromI32(5);
-  } else if (volume <= e18(BigInt.fromString("150000"))) {
-    return BigInt.fromI32(10);
   } else {
-    return BigInt.fromI32(15);
+    return BigInt.fromI32(1);
   }
 }
