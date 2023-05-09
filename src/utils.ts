@@ -1,8 +1,8 @@
 import { Address, BigInt, ethereum } from "@graphprotocol/graph-ts";
 import {
+  RouterV2,
   RouterV2__getAmountsOutInputRoutesStruct,
-  Swap,
-} from "../generated/Router/RouterV2";
+} from "../generated/templates/PairReader/RouterV2";
 import {
   AccumulativeTokenBalance,
   Referral,
@@ -16,13 +16,20 @@ import {
   PathToTarget,
   Pair,
 } from "../generated/schema";
-import { Dibs } from "../generated/Router/Dibs";
-import { DibsLottery } from "../generated/Router/DibsLottery";
-import { EACAggregatorProxy } from "../generated/Router/EACAggregatorProxy";
+import { Dibs } from "../generated/templates/PairReader/Dibs";
+import { DibsLottery } from "../generated/templates/PairReader/DibsLottery";
+import { EACAggregatorProxy } from "../generated/templates/PairReader/EACAggregatorProxy";
+import { Swap } from "../generated/templates/PairReader/Pair";
+import { PairFactory } from "../generated/templates/PairReader/PairFactory";
 
 export const ZERO_ADDRESS = Address.fromHexString(
   "0x0000000000000000000000000000000000000000"
 );
+
+export const WETH = Address.fromString(
+  "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+);
+
 export const EPOCH_START_TIMESTAMP = BigInt.fromI32(1673481600);
 export const EPOCH_LENGTH = BigInt.fromI32(604800);
 
@@ -216,6 +223,10 @@ export function createReferral(referrer: Address, user: Address): void {
 }
 export function createSwapLog(
   event: Swap,
+  user: Address,
+  token: Address,
+  amount: BigInt,
+  isStable: boolean,
   lotteryRound: BigInt,
   volumeInBNB: BigInt,
   BNBPrice: BigInt,
@@ -223,18 +234,22 @@ export function createSwapLog(
 ): void {
   // log the swap itself
   let swap = new SwapLog(
-    event.transaction.hash.toHex() + "-" + event.logIndex.toString()
+    event.transaction.hash.toHex() +
+      "-" +
+      event.logIndex.toString() +
+      "-" +
+      token.toHex()
   );
   swap.txHash = event.transaction.hash;
   swap.logIndex = event.logIndex;
-  swap.user = event.params.sender;
-  swap.tokenIn = event.params._tokenIn;
-  swap.amountIn = event.params.amount0In;
+  swap.user = user;
+  swap.tokenIn = token;
+  swap.amountIn = amount;
   swap.volumeInBNB = volumeInBNB;
   swap.BNBPrice = BNBPrice;
   swap.volumeInDollars = volumeInDollars;
   swap.round = lotteryRound;
-  swap.stable = event.params.stable;
+  swap.stable = isStable;
   swap.timestamp = event.block.timestamp;
   swap.save();
 }
@@ -248,6 +263,18 @@ export function getBNBChainLink(): EACAggregatorProxy {
 export function getDIBS(): Dibs {
   return Dibs.bind(
     Address.fromString("0x664cE330511653cB2744b8eD50DbA31C6c4C08ca")
+  );
+}
+
+export function getFactory(): PairFactory {
+  return PairFactory.bind(
+    Address.fromString("0xAFD89d21BdB66d00817d4153E055830B1c2B3970")
+  );
+}
+
+export function getRouter(): RouterV2 {
+  return RouterV2.bind(
+    Address.fromString("0xd4ae6eCA985340Dd434D38F470aCCce4DC78D109")
   );
 }
 

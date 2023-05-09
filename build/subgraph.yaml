@@ -3,36 +3,6 @@ schema:
   file: schema.graphql
 dataSources:
   - kind: ethereum
-    name: Router
-    network: bsc
-    source:
-      address: "0xd4ae6eCA985340Dd434D38F470aCCce4DC78D109"
-      abi: RouterV2
-      startBlock: 25238657
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.6
-      language: wasm/assemblyscript
-      entities:
-        - Swap
-      abis:
-        - name: PairFactory
-          file: Router/abis/PairFactory.json
-        - name: Dibs
-          file: Router/abis/Dibs.json
-        - name: RouterV2
-          file: Router/abis/RouterV2.json
-        - name: DibsLottery
-          file: Router/abis/DibsLottery.json
-        - name: EACAggregatorProxy
-          file: Router/abis/EACAggregatorProxy.json
-        - name: ERC20
-          file: Router/abis/ERC20.json
-      eventHandlers:
-        - event: Swap(indexed address,uint256,address,indexed address,bool)
-          handler: handleSwap
-      file: Router/Router.wasm
-  - kind: ethereum
     name: PairFactoryUpgradeable
     network: bsc
     source:
@@ -54,3 +24,34 @@ dataSources:
         - event: PairCreated(indexed address,indexed address,bool,address,uint256)
           handler: handlePairCreated
       file: PairFactoryUpgradeable/PairFactoryUpgradeable.wasm
+templates:
+  - name: PairReader
+    kind: ethereum/contract
+    network: bsc
+    source:
+      abi: Pair
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: templates/PairReader/PairReader.wasm
+      entities:
+        - Swap
+      abis:
+        - name: PairFactory
+          file: PairReader/abis/PairFactory.json
+        - name: Dibs
+          file: PairReader/abis/Dibs.json
+        - name: RouterV2
+          file: PairReader/abis/RouterV2.json
+        - name: DibsLottery
+          file: PairReader/abis/DibsLottery.json
+        - name: EACAggregatorProxy
+          file: PairReader/abis/EACAggregatorProxy.json
+        - name: ERC20
+          file: PairReader/abis/ERC20.json
+        - name: Pair
+          file: PairReader/abis/Pair.json
+      eventHandlers:
+        - event: Swap(indexed address,uint256,uint256,uint256,uint256,indexed address)
+          handler: handleSwap

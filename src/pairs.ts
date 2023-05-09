@@ -9,6 +9,8 @@ import {
   TokenToPair,
 } from "../generated/schema";
 
+import { PairReader } from "../generated/templates";
+
 const WBNB = Address.fromString("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c");
 
 const USDC = Address.fromString("0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d");
@@ -205,4 +207,6 @@ export function handlePairCreated(event: PairCreated): void {
   tokens.forEach((token) => {
     calculatePathToTarget(token, WBNB);
   });
+
+  PairReader.create(event.params.pair);
 }

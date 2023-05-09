@@ -6,6 +6,19 @@ type AccumulativeTokenBalance @entity {
   lastUpdate: BigInt!
 }
 
+type TotalVolumeTracker @entity {
+  id: ID! # "VOLUME_TRACKER"
+  totalVolume: BigInt!
+  dibsVolume: BigInt!
+}
+
+type DailyVolumeTracker @entity {
+  id: ID! # day
+  day: BigInt!
+  totalVolume: BigInt!
+  dibsVolume: BigInt!
+}
+
 type SwapLog @entity {
   id: ID! # txHash + logIndex
   txHash: Bytes!
