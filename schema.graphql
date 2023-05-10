@@ -98,6 +98,11 @@ type Pair @entity {
   stable: Boolean!
 }
 
+type AllPair @entity {
+  id: ID!
+  pairs: [Pair!]! # list of all pairs
+}
+
 type TokenToPair @entity {
   id: ID! # token
   pairs: [Pair!]! # list of direct pairs

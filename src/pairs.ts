@@ -3,6 +3,7 @@ import { PairCreated } from "../generated/PairFactoryUpgradeable/PairFactory";
 import { Pair as ThePair } from "../generated/PairFactoryUpgradeable/Pair";
 
 import {
+  AllPair,
   Pair,
   PathToTarget,
   TokenData,
@@ -13,17 +14,7 @@ import { PairReader } from "../generated/templates";
 
 const WBNB = Address.fromString("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c");
 
-const USDC = Address.fromString("0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d");
-
-const BUSD = Address.fromString("0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56");
-
-const HEY = Address.fromString("0x0782b6d8c4551B9760e74c0545a9bCD90bdc41E5");
-
-const FRAX = Address.fromString("0x90C97F71E18723b0Cf0dfa30ee176Ab653E89F40");
-
 const TOKEN_DATA_ID = "TOKEN_DATA";
-
-const targets = [WBNB, USDC, BUSD, HEY, FRAX];
 
 function addEdge(token: Address, pair: Pair): void {
   let tokenToPair = TokenToPair.load(token.toHex());
@@ -208,5 +199,24 @@ export function handlePairCreated(event: PairCreated): void {
     calculatePathToTarget(token, WBNB);
   });
 
-  PairReader.create(event.params.pair);
+  const allPair = addToAllPair(pair);
+
+  if (event.block.number.gt(BigInt.fromI64(25238657))) {
+    allPair.pairs.forEach((pairId) => {
+      PairReader.create(Address.fromString(pairId));
+    });
+  }
+}
+
+function addToAllPair(pair: Pair): AllPair {
+  let allPair = AllPair.load("0");
+  if (allPair == null) {
+    allPair = new AllPair("0");
+    allPair.pairs = [];
+  }
+  const pairs = allPair.pairs;
+  pairs.push(pair.id);
+  allPair.pairs = pairs;
+  allPair.save();
+  return allPair;
 }
