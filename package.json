@@ -5,7 +5,7 @@
     "codegen": "graph codegen",
     "build": "graph build",
     "test": "graph test",
-    "prepare:thena": "mustache config/thena.json subgraph.solidly.template.yaml > subgraph.yaml"
+    "prepare:thena": "mustache config/thena.json subgraph.solidly.template.yaml > subgraph.yaml; mustache config/thena.json config/config.template.ts > config/config.ts"
   },
   "dependencies": {
     "@graphprotocol/graph-cli": "0.35.0",

@@ -1,9 +1,5 @@
 import { Address, BigInt, ethereum } from "@graphprotocol/graph-ts"
 import {
-  RouterV2,
-  RouterV2__getAmountsOutInputRoutesStruct
-} from "../generated/templates/PairReader/RouterV2"
-import {
   AccumulativeTokenBalance,
   Referral,
   GeneratedVolume,
@@ -22,23 +18,21 @@ import { EACAggregatorProxy } from "../generated/templates/PairReader/EACAggrega
 import { Swap } from "../generated/templates/PairReader/Pair"
 import { PairFactory } from "../generated/templates/PairReader/PairFactory"
 
+import { EPOCH_START_TIMESTAMP, EPOCH_DURATION } from "../config/config"
+
+const epochStartTimeStamp = BigInt.fromI32(EPOCH_START_TIMESTAMP)
+const epochDuration = BigInt.fromI32(EPOCH_DURATION)
+
 export const zero_address = Address.fromHexString(
   "0x0000000000000000000000000000000000000000"
 )
 
-export const weth = Address.fromString(
-  "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
-)
-
-export const EPOCH_START_TIMESTAMP = BigInt.fromI32(1673481600)
-export const EPOCH_LENGTH = BigInt.fromI32(604800)
-
 export function getRound(timestamp: BigInt): BigInt {
-  return timestamp.minus(EPOCH_START_TIMESTAMP).div(EPOCH_LENGTH)
+  return timestamp.minus(epochStartTimeStamp).div(epochDuration)
 }
 
 export function getDay(timestamp: BigInt): BigInt {
-  return timestamp.minus(EPOCH_START_TIMESTAMP).div(BigInt.fromI32(86400))
+  return timestamp.minus(epochStartTimeStamp).div(BigInt.fromI32(86400))
 }
 
 export enum VolumeType {

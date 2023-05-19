@@ -11,6 +11,7 @@ import {
 } from "../generated/schema"
 
 import { PairReader } from "../generated/templates"
+import { DIBS_START_BLOCK } from "../config/config"
 
 const weth = Address.fromString("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c")
 
@@ -201,7 +202,7 @@ export function handlePairCreated(event: PairCreated): void {
 
   const allPair = addToAllPair(pair)
 
-  if (event.block.number.gt(BigInt.fromI64(25238657))) {
+  if (event.block.number.gt(BigInt.fromI64(DIBS_START_BLOCK))) {
     allPair.pairs.forEach(pairId => {
       PairReader.create(Address.fromString(pairId))
     })

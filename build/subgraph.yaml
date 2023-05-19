@@ -42,8 +42,6 @@ templates:
           file: PairReader/abis/PairFactory.json
         - name: Dibs
           file: PairReader/abis/Dibs.json
-        - name: RouterV2
-          file: PairReader/abis/RouterV2.json
         - name: DibsLottery
           file: PairReader/abis/DibsLottery.json
         - name: EACAggregatorProxy

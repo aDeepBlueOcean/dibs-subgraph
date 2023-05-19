@@ -19,18 +19,19 @@ import {
   getRewardPercentage,
   getNumberOfTickets,
   getOrCreateWeeklyGeneratedVolume,
-  getFactory,
-  weth
+  getFactory
 } from "./utils"
 import { Pair } from "../generated/templates/PairReader/Pair"
 import {
   PathToTarget,
   TotalVolumeTracker,
-  DailyVolumeTracker
+  DailyVolumeTracker,
+  TokenTracker
 } from "../generated/schema"
 import { EACAggregatorProxy } from "../generated/templates/PairReader/EACAggregatorProxy"
 import { Dibs } from "../generated/templates/PairReader/Dibs"
 import { DibsLottery } from "../generated/templates/PairReader/DibsLottery"
+import { WETH } from "../config/config"
 
 export class SwapHandler {
   event: Swap
@@ -133,6 +134,8 @@ export class SwapHandler {
     let volumeInWeth: BigInt
     const inputToken = ERC20.bind(token)
     const precision = 4
+
+    const weth = Address.fromHexString(WETH)
 
     if (token == weth) {
       // if input token is wETH, no need to make conversions
@@ -250,20 +253,21 @@ export class SwapHandler {
     )
   }
 
-  private _getRewardAmount(amount: BigInt): BigInt {
-    const feeRate = this.pairFactory.getFee(this.pair.isStable())
-    const feeAmount = amount.times(feeRate).div(BigInt.fromI32(10000))
-    const rewardPercentage = getRewardPercentage(
-      getOrCreateGeneratedVolume(this.parent).amountAsReferrer
-    )
-    const rewardAmount = feeAmount
-      .times(rewardPercentage)
-      .div(BigInt.fromI32(10000))
-    return rewardAmount
-  }
-
   private _distributeRewards(totalAmount: BigInt, token: Address): void {
-    const rewardAmount = this._getRewardAmount(totalAmount)
+    const generatedFees = this._getGeneratedFees(totalAmount)
+
+    const rewardAmount = this._getRewardAmount(
+      generatedFees,
+      getRewardPercentage(
+        getOrCreateGeneratedVolume(this.parent).amountAsReferrer
+      )
+    )
+
+    const maxRewardAmount = this._getRewardAmount(
+      generatedFees,
+      this.pairFactory.MAX_REFERRAL_FEE()
+    )
+
     const scale = this.dibs.SCALE()
     const grandParentPercentage = this.dibs.grandparentPercentage()
     const dibsPercentage = this.dibs.dibsPercentage()
@@ -292,6 +296,42 @@ export class SwapHandler {
       dibsAmount,
       this.timestamp
     )
+
+    // update token tracker
+    this._updateTokenTracker(token, totalAmount, dibsAmount)
+  }
+
+  private _getGeneratedFees(amount: BigInt): BigInt {
+    const feeRate = this.pairFactory.getFee(this.pair.isStable())
+    const feeAmount = amount.times(feeRate).div(BigInt.fromI32(10000))
+    return feeAmount
+  }
+
+  private _getRewardAmount(amount: BigInt, rewardPercentage: BigInt): BigInt {
+    const rewardAmount = amount
+      .times(rewardPercentage)
+      .div(BigInt.fromI32(10000))
+    return rewardAmount
+  }
+
+  private _updateTokenTracker(
+    token: Address,
+    totalAmount: BigInt,
+    dibsAmount: BigInt
+  ): void {
+    let tokenTracker = TokenTracker.load(token.toHex())
+
+    if (tokenTracker == null) {
+      tokenTracker = new TokenTracker(token.toHex())
+      tokenTracker.token = token
+      tokenTracker.total = BigInt.fromI32(0)
+      tokenTracker.dibs = BigInt.fromI32(0)
+    }
+
+    tokenTracker.total = tokenTracker.total.plus(totalAmount)
+    tokenTracker.dibs = tokenTracker.dibs.plus(dibsAmount)
+
+    tokenTracker.save()
   }
 
   private _distributeLotteryTickets(): void {
