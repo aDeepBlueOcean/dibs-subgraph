@@ -1,73 +1,73 @@
-import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts";
-import { PairCreated } from "../generated/PairFactoryDataSource/PairFactory";
-import { Pair as ThePair } from "../generated/PairFactoryDataSource/Pair";
+import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts"
+import { PairCreated } from "../generated/PairFactoryDataSource/PairFactory"
+import { Pair as ThePair } from "../generated/PairFactoryDataSource/Pair"
 
 import {
   AllPair,
   Pair,
   PathToTarget,
   TokenData,
-  TokenToPair,
-} from "../generated/schema";
+  TokenToPair
+} from "../generated/schema"
 
-import { PairReader } from "../generated/templates";
+import { PairReader } from "../generated/templates"
 
-const WBNB = Address.fromString("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c");
+const weth = Address.fromString("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c")
 
-const TOKEN_DATA_ID = "TOKEN_DATA";
+const TOKEN_DATA_ID = "TOKEN_DATA"
 
 function addEdge(token: Address, pair: Pair): void {
-  let tokenToPair = TokenToPair.load(token.toHex());
+  let tokenToPair = TokenToPair.load(token.toHex())
   if (!tokenToPair) {
-    tokenToPair = new TokenToPair(token.toHex());
-    tokenToPair.pairs = [];
+    tokenToPair = new TokenToPair(token.toHex())
+    tokenToPair.pairs = []
   }
-  const pairs = tokenToPair.pairs;
-  pairs.push(pair.id);
-  tokenToPair.pairs = pairs;
-  tokenToPair.save();
+  const pairs = tokenToPair.pairs
+  pairs.push(pair.id)
+  tokenToPair.pairs = pairs
+  tokenToPair.save()
 }
 
 function addToken(token: Address): void {
   // adds the token to TokenData scheme if not exists
-  let tokenData = TokenData.load(TOKEN_DATA_ID);
+  let tokenData = TokenData.load(TOKEN_DATA_ID)
   if (!tokenData) {
-    tokenData = new TokenData(TOKEN_DATA_ID);
-    tokenData.tokens = [];
+    tokenData = new TokenData(TOKEN_DATA_ID)
+    tokenData.tokens = []
   }
 
-  const tokens = tokenData.tokens;
+  const tokens = tokenData.tokens
 
   if (!tokens.includes(token)) {
-    tokens.push(token);
+    tokens.push(token)
   }
 
-  tokenData.tokens = tokens;
-  tokenData.save();
+  tokenData.tokens = tokens
+  tokenData.save()
 }
 
 function getTokens(): Address[] {
-  let tokenData = TokenData.load(TOKEN_DATA_ID);
+  let tokenData = TokenData.load(TOKEN_DATA_ID)
   if (!tokenData) {
-    tokenData = new TokenData(TOKEN_DATA_ID);
-    tokenData.tokens = [];
+    tokenData = new TokenData(TOKEN_DATA_ID)
+    tokenData.tokens = []
   }
-  return tokenData.tokens.map<Address>((bytesAddress) =>
+  return tokenData.tokens.map<Address>(bytesAddress =>
     Address.fromBytes(bytesAddress)
-  );
+  )
 }
 
 function getPairs(token: Address): Pair[] {
-  let tokenToPair = TokenToPair.load(token.toHex());
+  let tokenToPair = TokenToPair.load(token.toHex())
   if (!tokenToPair) {
-    return [];
+    return []
   } else {
     return tokenToPair.pairs
-      .map<Pair>((strPairAddress) => Pair.load(strPairAddress)!)
+      .map<Pair>(strPairAddress => Pair.load(strPairAddress)!)
       .filter(
         (pair): bool => {
-          const thePair = ThePair.bind(Address.fromString(pair.id));
-          const reserves = thePair.getReserves();
+          const thePair = ThePair.bind(Address.fromString(pair.id))
+          const reserves = thePair.getReserves()
 
           return !(
             // low liquidity
@@ -75,9 +75,9 @@ function getPairs(token: Address): Pair[] {
               reserves.value0.lt(BigInt.fromI64(10000000000)) ||
               reserves.value1.lt(BigInt.fromI64(10000000000))
             )
-          );
+          )
         }
-      );
+      )
   }
 }
 
@@ -86,28 +86,28 @@ function savePathToTarget(
   target: Address,
   path: Address[]
 ): void {
-  const id = token.toHex() + "-" + target.toHex();
-  let pathToTarget = PathToTarget.load(id);
+  const id = token.toHex() + "-" + target.toHex()
+  let pathToTarget = PathToTarget.load(id)
   if (!pathToTarget) {
-    pathToTarget = new PathToTarget(id);
-    pathToTarget.token = token;
-    pathToTarget.target = target;
-    pathToTarget.path = [];
+    pathToTarget = new PathToTarget(id)
+    pathToTarget.token = token
+    pathToTarget.target = target
+    pathToTarget.path = []
   }
 
-  pathToTarget.path = changetype<Bytes[]>(path);
-  pathToTarget.save();
+  pathToTarget.path = changetype<Bytes[]>(path)
+  pathToTarget.save()
 }
 
 class IncomingPair {
-  public parent: IncomingPair | null;
-  public token: Address;
-  public pair: Pair;
+  public parent: IncomingPair | null
+  public token: Address
+  public pair: Pair
 
   constructor(parent_: IncomingPair | null, token_: Address, pair_: Pair) {
-    this.parent = parent_;
-    this.token = token_;
-    this.pair = pair_;
+    this.parent = parent_
+    this.token = token_
+    this.pair = pair_
   }
 }
 
@@ -116,46 +116,46 @@ function PairsToIncomingPairs(
   token: Address,
   pairs: Pair[]
 ): IncomingPair[] {
-  const _pairs: IncomingPair[] = [];
+  const _pairs: IncomingPair[] = []
   for (let i = 0; i < pairs.length; i++) {
-    _pairs.push(new IncomingPair(parent, token, pairs[i]));
+    _pairs.push(new IncomingPair(parent, token, pairs[i]))
   }
-  return _pairs;
+  return _pairs
 }
 
 function calculatePathToTarget(token: Address, target: Address): void {
-  let visited: Map<string, bool> = new Map<string, bool>();
+  let visited: Map<string, bool> = new Map<string, bool>()
 
   if (token == target) {
-    savePathToTarget(token, target, [target]);
-    return;
+    savePathToTarget(token, target, [target])
+    return
   }
 
-  let fringe: Array<IncomingPair>;
-  fringe = PairsToIncomingPairs(null, token, getPairs(token));
+  let fringe: Array<IncomingPair>
+  fringe = PairsToIncomingPairs(null, token, getPairs(token))
 
   while (fringe.length > 0) {
-    const top = fringe.shift();
-    const _token = top.token;
-    const _pair = top.pair;
+    const top = fringe.shift()
+    const _token = top.token
+    const _pair = top.pair
 
-    visited.set(_pair.id, true);
+    visited.set(_pair.id, true)
 
-    const otherToken = _pair.token0 == _token ? _pair.token1 : _pair.token0;
+    const otherToken = _pair.token0 == _token ? _pair.token1 : _pair.token0
 
     if (otherToken == target) {
-      const path: Address[] = [];
-      let __parent: IncomingPair | null = top;
+      const path: Address[] = []
+      let __parent: IncomingPair | null = top
       while (__parent != null) {
-        path.push(Address.fromString(__parent.pair.id));
-        __parent = __parent.parent;
+        path.push(Address.fromString(__parent.pair.id))
+        __parent = __parent.parent
       }
-      savePathToTarget(token, target, path.reverse());
-      return;
+      savePathToTarget(token, target, path.reverse())
+      return
     }
 
     // continue the search from otherToken
-    const otherTokenPairs = getPairs(Address.fromBytes(otherToken));
+    const otherTokenPairs = getPairs(Address.fromBytes(otherToken))
     for (let i = 0; i < otherTokenPairs.length; i++) {
       if (!visited.has(otherTokenPairs[i].id)) {
         fringe.push(
@@ -164,7 +164,7 @@ function calculatePathToTarget(token: Address, target: Address): void {
             Address.fromBytes(otherToken),
             otherTokenPairs[i]
           )
-        );
+        )
       }
     }
   }
@@ -172,51 +172,51 @@ function calculatePathToTarget(token: Address, target: Address): void {
 
 export function handlePairCreated(event: PairCreated): void {
   // get the pair address
-  const pairAddress = event.params.pair;
+  const pairAddress = event.params.pair
   // get the token0 address
-  const token0Address = event.params.token0;
+  const token0Address = event.params.token0
   // get the token1 address
-  const token1Address = event.params.token1;
+  const token1Address = event.params.token1
 
   // create an edge and add it to the tree
   // the edge will be from token0 to token1 and the pair address will be the edge id
-  const pair = new Pair(pairAddress.toHex());
-  pair.token0 = token0Address;
-  pair.token1 = token1Address;
-  pair.stable = event.params.stable;
-  pair.save();
+  const pair = new Pair(pairAddress.toHex())
+  pair.token0 = token0Address
+  pair.token1 = token1Address
+  pair.stable = event.params.stable
+  pair.save()
 
   // adjacency list
-  addEdge(token0Address, pair);
-  addEdge(token1Address, pair);
+  addEdge(token0Address, pair)
+  addEdge(token1Address, pair)
 
-  addToken(token0Address);
-  addToken(token1Address);
+  addToken(token0Address)
+  addToken(token1Address)
 
-  const tokens = getTokens();
+  const tokens = getTokens()
 
-  tokens.forEach((token) => {
-    calculatePathToTarget(token, WBNB);
-  });
+  tokens.forEach(token => {
+    calculatePathToTarget(token, weth)
+  })
 
-  const allPair = addToAllPair(pair);
+  const allPair = addToAllPair(pair)
 
   if (event.block.number.gt(BigInt.fromI64(25238657))) {
-    allPair.pairs.forEach((pairId) => {
-      PairReader.create(Address.fromString(pairId));
-    });
+    allPair.pairs.forEach(pairId => {
+      PairReader.create(Address.fromString(pairId))
+    })
   }
 }
 
 function addToAllPair(pair: Pair): AllPair {
-  let allPair = AllPair.load("0");
+  let allPair = AllPair.load("0")
   if (allPair == null) {
-    allPair = new AllPair("0");
-    allPair.pairs = [];
+    allPair = new AllPair("0")
+    allPair.pairs = []
   }
-  const pairs = allPair.pairs;
-  pairs.push(pair.id);
-  allPair.pairs = pairs;
-  allPair.save();
-  return allPair;
+  const pairs = allPair.pairs
+  pairs.push(pair.id)
+  allPair.pairs = pairs
+  allPair.save()
+  return allPair
 }
