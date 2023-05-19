@@ -1,37 +1,37 @@
 import { Address, BigInt, Bytes, ethereum } from "@graphprotocol/graph-ts"
-import { PairFactory } from "../generated/templates/PairReader/PairFactory"
-import { ERC20 } from "../generated/templates/PairReader/ERC20"
-import { Swap } from "../generated/templates/PairReader/Pair"
+import { PairFactory } from "../../generated/templates/PairReader/PairFactory"
+import { ERC20 } from "../../generated/templates/PairReader/ERC20"
+import { Swap } from "../../generated/templates/PairReader/Pair"
 
 import {
   zero_address,
   addAccumulativeTokenBalance,
   getOrCreateGeneratedVolume,
   createReferral,
-  createSwapLog,
-  getDibs,
   getOrCreateLottery,
   getOrCreateUserLottery,
-  getDibsLottery,
-  getWethPriceFeed,
   updateVolume,
   VolumeType,
-  getRewardPercentage,
-  getNumberOfTickets,
-  getOrCreateWeeklyGeneratedVolume,
-  getFactory
-} from "./utils"
-import { Pair } from "../generated/templates/PairReader/Pair"
+  getOrCreateWeeklyGeneratedVolume
+} from "../utils"
+import { Pair } from "../../generated/templates/PairReader/Pair"
 import {
   PathToTarget,
   TotalVolumeTracker,
   DailyVolumeTracker,
-  TokenTracker
-} from "../generated/schema"
-import { EACAggregatorProxy } from "../generated/templates/PairReader/EACAggregatorProxy"
-import { Dibs } from "../generated/templates/PairReader/Dibs"
-import { DibsLottery } from "../generated/templates/PairReader/DibsLottery"
-import { WETH } from "../config/config"
+  TokenTracker,
+  SwapLog
+} from "../../generated/schema"
+import { EACAggregatorProxy } from "../../generated/templates/PairReader/EACAggregatorProxy"
+import { Dibs } from "../../generated/templates/PairReader/Dibs"
+import { DibsLottery } from "../../generated/templates/PairReader/DibsLottery"
+import {
+  DIBS,
+  DIBS_LOTTERY,
+  FACTORY,
+  WETH,
+  WETH_PRICE_FEED
+} from "../../config/config"
 
 export class SwapHandler {
   event: Swap
@@ -355,5 +355,81 @@ export class SwapHandler {
   private _isRegisteredUser(): boolean {
     // all registered users must have a non-zero parent
     return this.parent != zero_address
+  }
+}
+
+function getWethPriceFeed(): EACAggregatorProxy {
+  return EACAggregatorProxy.bind(Address.fromString(WETH_PRICE_FEED))
+}
+
+function getDibs(): Dibs {
+  return Dibs.bind(Address.fromString(DIBS))
+}
+
+function getFactory(): PairFactory {
+  return PairFactory.bind(Address.fromString(FACTORY))
+}
+
+function getDibsLottery(): DibsLottery {
+  return DibsLottery.bind(Address.fromString(DIBS_LOTTERY))
+}
+
+function createSwapLog(
+  event: Swap,
+  user: Address,
+  token: Address,
+  amount: BigInt,
+  isStable: boolean,
+  lotteryRound: BigInt,
+  volumeInBNB: BigInt,
+  BNBPrice: BigInt,
+  volumeInDollars: BigInt
+): void {
+  // log the swap itself
+  let swap = new SwapLog(
+    event.transaction.hash.toHex() +
+      "-" +
+      event.logIndex.toString() +
+      "-" +
+      token.toHex()
+  )
+  swap.txHash = event.transaction.hash
+  swap.logIndex = event.logIndex
+  swap.user = user
+  swap.tokenIn = token
+  swap.amountIn = amount
+  swap.volumeInBNB = volumeInBNB
+  swap.BNBPrice = BNBPrice
+  swap.volumeInDollars = volumeInDollars
+  swap.round = lotteryRound
+  swap.stable = isStable
+  swap.timestamp = event.block.timestamp
+  swap.save()
+}
+
+function e18(amount: BigInt): BigInt {
+  const E18 = BigInt.fromI32(10).pow(18)
+  return amount.times(E18)
+}
+
+function getRewardPercentage(volume: BigInt): BigInt {
+  if (volume <= e18(BigInt.fromString("30000"))) {
+    return BigInt.fromI32(500)
+  } else if (volume <= e18(BigInt.fromString("150000"))) {
+    return BigInt.fromI32(650)
+  } else if (volume <= e18(BigInt.fromString("1000000"))) {
+    return BigInt.fromI32(800)
+  } else if (volume <= e18(BigInt.fromString("10000000"))) {
+    return BigInt.fromI32(1000)
+  } else {
+    return BigInt.fromI32(1200)
+  }
+}
+
+function getNumberOfTickets(volume: BigInt): BigInt {
+  if (volume <= e18(BigInt.fromString("500"))) {
+    return BigInt.fromI32(0)
+  } else {
+    return BigInt.fromI32(1)
   }
 }

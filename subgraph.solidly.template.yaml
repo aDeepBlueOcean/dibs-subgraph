@@ -23,7 +23,7 @@ dataSources:
       eventHandlers:
         - event: PairCreated(indexed address,indexed address,bool,address,uint256)
           handler: handlePairCreated
-      file: ./src/pairs.ts
+      file: ./src/solidly/pairs.ts
 templates:
   - name: PairReader
     kind: ethereum/contract
@@ -34,7 +34,7 @@ templates:
       kind: ethereum/events
       apiVersion: 0.0.6
       language: wasm/assemblyscript
-      file: ./src/main.ts
+      file: ./src/solidly/main.ts
       entities:
         - Swap
       abis:

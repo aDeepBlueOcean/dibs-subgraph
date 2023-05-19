@@ -8,9 +8,7 @@ import {
   UserLottery,
   AccumulativeGeneratedVolume,
   WeeklyGeneratedVolume,
-  DailyGeneratedVolume,
-  PathToTarget,
-  Pair
+  DailyGeneratedVolume
 } from "../generated/schema"
 import { Dibs } from "../generated/templates/PairReader/Dibs"
 import { DibsLottery } from "../generated/templates/PairReader/DibsLottery"
@@ -211,88 +209,5 @@ export function createReferral(referrer: Address, user: Address): void {
     referral.user = user
     referral.referrer = referrer
     referral.save()
-  }
-}
-export function createSwapLog(
-  event: Swap,
-  user: Address,
-  token: Address,
-  amount: BigInt,
-  isStable: boolean,
-  lotteryRound: BigInt,
-  volumeInBNB: BigInt,
-  BNBPrice: BigInt,
-  volumeInDollars: BigInt
-): void {
-  // log the swap itself
-  let swap = new SwapLog(
-    event.transaction.hash.toHex() +
-      "-" +
-      event.logIndex.toString() +
-      "-" +
-      token.toHex()
-  )
-  swap.txHash = event.transaction.hash
-  swap.logIndex = event.logIndex
-  swap.user = user
-  swap.tokenIn = token
-  swap.amountIn = amount
-  swap.volumeInBNB = volumeInBNB
-  swap.BNBPrice = BNBPrice
-  swap.volumeInDollars = volumeInDollars
-  swap.round = lotteryRound
-  swap.stable = isStable
-  swap.timestamp = event.block.timestamp
-  swap.save()
-}
-
-export function getWethPriceFeed(): EACAggregatorProxy {
-  return EACAggregatorProxy.bind(
-    Address.fromString("0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE")
-  )
-}
-
-export function getDibs(): Dibs {
-  return Dibs.bind(
-    Address.fromString("0x664cE330511653cB2744b8eD50DbA31C6c4C08ca")
-  )
-}
-
-export function getFactory(): PairFactory {
-  return PairFactory.bind(
-    Address.fromString("0xAFD89d21BdB66d00817d4153E055830B1c2B3970")
-  )
-}
-
-export function getDibsLottery(): DibsLottery {
-  return DibsLottery.bind(
-    Address.fromString("0x287ed50e4c158dac38e1b7e16c50cd1b2551a300")
-  )
-}
-
-function e18(amount: BigInt): BigInt {
-  const E18 = BigInt.fromI32(10).pow(18)
-  return amount.times(E18)
-}
-
-export function getRewardPercentage(volume: BigInt): BigInt {
-  if (volume <= e18(BigInt.fromString("30000"))) {
-    return BigInt.fromI32(500)
-  } else if (volume <= e18(BigInt.fromString("150000"))) {
-    return BigInt.fromI32(650)
-  } else if (volume <= e18(BigInt.fromString("1000000"))) {
-    return BigInt.fromI32(800)
-  } else if (volume <= e18(BigInt.fromString("10000000"))) {
-    return BigInt.fromI32(1000)
-  } else {
-    return BigInt.fromI32(1200)
-  }
-}
-
-export function getNumberOfTickets(volume: BigInt): BigInt {
-  if (volume <= e18(BigInt.fromString("500"))) {
-    return BigInt.fromI32(0)
-  } else {
-    return BigInt.fromI32(1)
   }
 }

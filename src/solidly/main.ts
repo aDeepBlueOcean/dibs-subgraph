@@ -1,4 +1,4 @@
-import { Swap } from "../generated/templates/PairReader/Pair"
+import { Swap } from "../../generated/templates/PairReader/Pair"
 
 import { SwapHandler } from "./SolidlySwapHandler"
 

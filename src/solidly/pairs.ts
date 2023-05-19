@@ -1,6 +1,6 @@
 import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts"
-import { PairCreated } from "../generated/PairFactoryDataSource/PairFactory"
-import { Pair as ThePair } from "../generated/PairFactoryDataSource/Pair"
+import { PairCreated } from "../../generated/PairFactoryDataSource/PairFactory"
+import { Pair as ThePair } from "../../generated/PairFactoryDataSource/Pair"
 
 import {
   AllPair,
@@ -8,12 +8,12 @@ import {
   PathToTarget,
   TokenData,
   TokenToPair
-} from "../generated/schema"
+} from "../../generated/schema"
 
-import { PairReader } from "../generated/templates"
-import { DIBS_START_BLOCK } from "../config/config"
+import { PairReader } from "../../generated/templates"
+import { DIBS_START_BLOCK, WETH_PRICE_FEED } from "../../config/config"
 
-const weth = Address.fromString("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c")
+const weth = Address.fromString(WETH_PRICE_FEED)
 
 const TOKEN_DATA_ID = "TOKEN_DATA"
 
