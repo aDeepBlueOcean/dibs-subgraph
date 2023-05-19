@@ -2,9 +2,8 @@ specVersion: 0.0.4
 schema:
   file: schema.graphql
 dataSources:
-  - kind: ethereum
-    name: PairFactoryUpgradeable
-    network: bsc
+  - kind: ethereum/contract
+    name: PairFactoryDataSource
     source:
       address: "0xAFD89d21BdB66d00817d4153E055830B1c2B3970"
       abi: PairFactory
@@ -17,17 +16,16 @@ dataSources:
         - PairCreated
       abis:
         - name: PairFactory
-          file: PairFactoryUpgradeable/abis/PairFactory.json
+          file: PairFactoryDataSource/abis/PairFactory.json
         - name: Pair
-          file: PairFactoryUpgradeable/abis/Pair.json
+          file: PairFactoryDataSource/abis/Pair.json
       eventHandlers:
         - event: PairCreated(indexed address,indexed address,bool,address,uint256)
           handler: handlePairCreated
-      file: PairFactoryUpgradeable/PairFactoryUpgradeable.wasm
+      file: PairFactoryDataSource/PairFactoryDataSource.wasm
 templates:
   - name: PairReader
     kind: ethereum/contract
-    network: bsc
     source:
       abi: Pair
     mapping:

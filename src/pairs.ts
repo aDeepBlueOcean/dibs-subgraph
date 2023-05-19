@@ -1,6 +1,6 @@
 import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts";
-import { PairCreated } from "../generated/PairFactoryUpgradeable/PairFactory";
-import { Pair as ThePair } from "../generated/PairFactoryUpgradeable/Pair";
+import { PairCreated } from "../generated/PairFactoryDataSource/PairFactory";
+import { Pair as ThePair } from "../generated/PairFactoryDataSource/Pair";
 
 import {
   AllPair,

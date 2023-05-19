@@ -19,6 +19,13 @@ type DailyVolumeTracker @entity {
   dibsVolume: BigInt!
 }
 
+type TokenTracker @entity {
+  id: ID! # tokenAddress
+  token: Bytes!
+  total: BigInt!
+  dibs: BigInt!
+}
+
 type SwapLog @entity {
   id: ID! # txHash + logIndex
   txHash: Bytes!
