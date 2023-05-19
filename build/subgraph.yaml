@@ -4,11 +4,11 @@ schema:
 dataSources:
   - kind: ethereum/contract
     name: PairFactoryDataSource
-    network: bsc
+    network: arbitrum-one
     source:
-      address: "0xAFD89d21BdB66d00817d4153E055830B1c2B3970"
+      address: "0xCe9240869391928253Ed9cc9Bcb8cb98CB5B0722"
       abi: PairFactory
-      startBlock: 24468802
+      startBlock: 81922397
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -27,7 +27,7 @@ dataSources:
 templates:
   - name: PairReader
     kind: ethereum/contract
-    network: bsc
+    network: arbitrum-one
     source:
       abi: Pair
     mapping:

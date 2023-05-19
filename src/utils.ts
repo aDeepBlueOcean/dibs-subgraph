@@ -3,18 +3,12 @@ import {
   AccumulativeTokenBalance,
   Referral,
   GeneratedVolume,
-  SwapLog,
   Lottery,
   UserLottery,
   AccumulativeGeneratedVolume,
   WeeklyGeneratedVolume,
   DailyGeneratedVolume
 } from "../generated/schema"
-import { Dibs } from "../generated/templates/PairReader/Dibs"
-import { DibsLottery } from "../generated/templates/PairReader/DibsLottery"
-import { EACAggregatorProxy } from "../generated/templates/PairReader/EACAggregatorProxy"
-import { Swap } from "../generated/templates/PairReader/Pair"
-import { PairFactory } from "../generated/templates/PairReader/PairFactory"
 
 import { EPOCH_START_TIMESTAMP, EPOCH_DURATION } from "../config/config"
 
