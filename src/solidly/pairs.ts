@@ -12,6 +12,7 @@ import {
 
 import { PairReader } from "../../generated/templates"
 import { DIBS_START_BLOCK, WETH_PRICE_FEED } from "../../config/config"
+import { Sync } from "../../generated/templates/PairReader/Pair"
 
 const weth = Address.fromString(WETH_PRICE_FEED)
 
@@ -67,14 +68,13 @@ function getPairs(token: Address): Pair[] {
       .map<Pair>(strPairAddress => Pair.load(strPairAddress)!)
       .filter(
         (pair): bool => {
-          const thePair = ThePair.bind(Address.fromString(pair.id))
-          const reserves = thePair.getReserves()
-
+          const r0 = pair.reserve0
+          const r1 = pair.reserve1
           return !(
             // low liquidity
             (
-              reserves.value0.lt(BigInt.fromI64(10000000000)) ||
-              reserves.value1.lt(BigInt.fromI64(10000000000))
+              r0.lt(BigInt.fromI64(10000000000)) ||
+              r1.lt(BigInt.fromI64(10000000000))
             )
           )
         }
@@ -182,8 +182,11 @@ export function handlePairCreated(event: PairCreated): void {
   // create an edge and add it to the tree
   // the edge will be from token0 to token1 and the pair address will be the edge id
   const pair = new Pair(pairAddress.toHex())
+  const reservers = ThePair.bind(pairAddress).getReserves()
   pair.token0 = token0Address
   pair.token1 = token1Address
+  pair.reserve0 = reservers.value0
+  pair.reserve1 = reservers.value1
   pair.stable = event.params.stable
   pair.save()
 
@@ -194,19 +197,23 @@ export function handlePairCreated(event: PairCreated): void {
   addToken(token0Address)
   addToken(token1Address)
 
+  const allPair = addToAllPair(pair)
+
+  if (event.block.number.gt(BigInt.fromI64(DIBS_START_BLOCK))) {
+    updatePath()
+
+    allPair.pairs.forEach(pairId => {
+      PairReader.create(Address.fromString(pairId))
+    })
+  }
+}
+
+export function updatePath(): void {
   const tokens = getTokens()
 
   tokens.forEach(token => {
     calculatePathToTarget(token, weth)
   })
-
-  const allPair = addToAllPair(pair)
-
-  if (event.block.number.gt(BigInt.fromI64(DIBS_START_BLOCK))) {
-    allPair.pairs.forEach(pairId => {
-      PairReader.create(Address.fromString(pairId))
-    })
-  }
 }
 
 function addToAllPair(pair: Pair): AllPair {

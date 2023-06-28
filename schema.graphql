@@ -102,6 +102,8 @@ type Pair @entity {
   id: ID! # pair address
   token0: Bytes!
   token1: Bytes!
+  reserve0: BigInt!
+  reserve1: BigInt!
   stable: Boolean!
 }
 
