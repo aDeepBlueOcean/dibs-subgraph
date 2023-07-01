@@ -199,13 +199,11 @@ export function handlePairCreated(event: PairCreated): void {
 
   const allPair = addToAllPair(pair)
 
-  if (event.block.number.gt(BigInt.fromI64(DIBS_START_BLOCK))) {
-    updatePath()
+  updatePath()
 
-    allPair.pairs.forEach(pairId => {
-      PairReader.create(Address.fromString(pairId))
-    })
-  }
+  allPair.pairs.forEach(pairId => {
+    PairReader.create(Address.fromString(pairId))
+  })
 }
 
 export function updatePath(): void {
