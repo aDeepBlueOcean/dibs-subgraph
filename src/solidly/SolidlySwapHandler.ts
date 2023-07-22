@@ -309,8 +309,37 @@ export class SwapHandler {
     remainingRewardAmount: BigInt,
     token: Address
   ): void {
-    // get reward amount based on parent tier
+    // note: these percentages should add up to 100%
+    const tryGrandParentPercentage = this.dibs.try_grandparentPercentage()
+    const tryReferrerPercentage = this.dibs.try_referrerPercentage()
+    const tryRefereePercentage = this.dibs.try_refereePercentage()
 
+    let grandParentPercentage: BigInt
+    let referrerPercentage: BigInt
+    let refereePercentage: BigInt
+
+    const scale = this.dibs.SCALE()
+    if (
+      tryGrandParentPercentage.reverted ||
+      tryReferrerPercentage.reverted ||
+      tryRefereePercentage.reverted
+    )
+      return
+    else {
+      grandParentPercentage = tryGrandParentPercentage.value
+      referrerPercentage = tryReferrerPercentage.value
+      refereePercentage = tryRefereePercentage.value
+
+      if (
+        grandParentPercentage
+          .plus(referrerPercentage)
+          .plus(refereePercentage)
+          .notEqual(scale)
+      )
+        return
+    }
+
+    // get reward amount based on parent tier
     const rewardAmount = remainingRewardAmount
       .times(
         getRewardPercentage(
@@ -320,13 +349,6 @@ export class SwapHandler {
       .div(BigInt.fromI32(10000))
 
     this._accPlatform(rewardAmount, token, AccType.WITHDRAW)
-
-    const scale = this.dibs.SCALE()
-
-    // note: these percentages should add up to 100%
-    const grandParentPercentage = this.dibs.grandparentPercentage()
-    const referrerPercentage = this.dibs.referrerPercentage()
-    const refereePercentage = this.dibs.refereePercentage()
 
     const grandParentAmount = rewardAmount
       .times(grandParentPercentage)
