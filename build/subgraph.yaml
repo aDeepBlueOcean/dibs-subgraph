@@ -6,9 +6,9 @@ dataSources:
     name: PairFactoryDataSource
     network: arbitrum-one
     source:
-      address: "0xCe9240869391928253Ed9cc9Bcb8cb98CB5B0722"
+      address: "0xAAA20D08e59F6561f242b08513D36266C5A29415"
       abi: PairFactory
-      startBlock: 81922397
+      startBlock: 69820005
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6

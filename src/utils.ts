@@ -1,11 +1,7 @@
 import { Address, BigInt, ethereum } from "@graphprotocol/graph-ts"
 import {
-  AccumulativeTokenBalance,
   Referral,
   GeneratedVolume,
-  Lottery,
-  UserLottery,
-  AccumulativeGeneratedVolume,
   WeeklyGeneratedVolume,
   DailyGeneratedVolume
 } from "../generated/schema"
@@ -19,7 +15,7 @@ export const zero_address = Address.fromHexString(
   "0x0000000000000000000000000000000000000000"
 )
 
-export function getRound(timestamp: BigInt): BigInt {
+export function getEpoch(timestamp: BigInt): BigInt {
   return timestamp.minus(epochStartTimeStamp).div(epochDuration)
 }
 
@@ -33,26 +29,11 @@ export enum VolumeType {
   GRANDPARENT
 }
 
-export function addAccumulativeTokenBalance(
-  token: Address,
+export function getOrCreateGeneratedVolume(
   user: Address,
-  amount: BigInt,
-  timestamp: BigInt
-): void {
-  let id = token.toHex() + "-" + user.toHex()
-  let accumulativeTokenBalance = AccumulativeTokenBalance.load(id)
-  if (accumulativeTokenBalance == null) {
-    accumulativeTokenBalance = new AccumulativeTokenBalance(id)
-    accumulativeTokenBalance.token = token
-    accumulativeTokenBalance.user = user
-    accumulativeTokenBalance.amount = BigInt.fromI32(0)
-  }
-  accumulativeTokenBalance.amount = accumulativeTokenBalance.amount.plus(amount)
-  accumulativeTokenBalance.lastUpdate = timestamp
-  accumulativeTokenBalance.save()
-}
-export function getOrCreateGeneratedVolume(user: Address): GeneratedVolume {
-  let id = user.toHex()
+  pair: Address
+): GeneratedVolume {
+  let id = user.toHex() + "-" + pair.toHex()
   let generatedVolume = GeneratedVolume.load(id)
   if (generatedVolume == null) {
     generatedVolume = new GeneratedVolume(id)
@@ -60,6 +41,7 @@ export function getOrCreateGeneratedVolume(user: Address): GeneratedVolume {
     generatedVolume.amountAsUser = BigInt.fromI32(0)
     generatedVolume.amountAsReferrer = BigInt.fromI32(0)
     generatedVolume.amountAsGrandparent = BigInt.fromI32(0)
+    generatedVolume.pair = pair
   }
   return generatedVolume as GeneratedVolume
 }
@@ -81,11 +63,12 @@ export function getOrCreateAccumulativeGeneratedVolume(
   return accumulativeGeneratedVolume as AccumulativeGeneratedVolume
 }
 
-export function getOrCreateWeeklyGeneratedVolume(
+export function getOrCreateEpochGeneratedVolume(
   user: Address,
-  epoch: BigInt
+  epoch: BigInt,
+  pair: Address
 ): WeeklyGeneratedVolume {
-  let id = user.toHex() + "-" + epoch.toString()
+  let id = user.toHex() + "-" + epoch.toString() + "-" + pair.toHex()
   let weeklyGeneratedVolume = WeeklyGeneratedVolume.load(id)
   if (weeklyGeneratedVolume == null) {
     weeklyGeneratedVolume = new WeeklyGeneratedVolume(id)
@@ -93,6 +76,7 @@ export function getOrCreateWeeklyGeneratedVolume(
     weeklyGeneratedVolume.amountAsUser = BigInt.fromI32(0)
     weeklyGeneratedVolume.amountAsReferrer = BigInt.fromI32(0)
     weeklyGeneratedVolume.amountAsGrandparent = BigInt.fromI32(0)
+    weeklyGeneratedVolume.pair = pair
     weeklyGeneratedVolume.epoch = epoch
   }
   return weeklyGeneratedVolume
@@ -100,9 +84,10 @@ export function getOrCreateWeeklyGeneratedVolume(
 
 export function getOrCreateDailyGeneratedVolume(
   user: Address,
-  day: BigInt
+  day: BigInt,
+  pair: Address
 ): DailyGeneratedVolume {
-  let id = user.toHex() + "-" + day.toString()
+  let id = user.toHex() + "-" + day.toString() + "-" + pair.toHex()
   let dailyGeneratedVolume = DailyGeneratedVolume.load(id)
   if (dailyGeneratedVolume == null) {
     dailyGeneratedVolume = new DailyGeneratedVolume(id)
@@ -110,6 +95,7 @@ export function getOrCreateDailyGeneratedVolume(
     dailyGeneratedVolume.amountAsUser = BigInt.fromI32(0)
     dailyGeneratedVolume.amountAsReferrer = BigInt.fromI32(0)
     dailyGeneratedVolume.amountAsGrandparent = BigInt.fromI32(0)
+    dailyGeneratedVolume.pair = pair
     dailyGeneratedVolume.day = day
   }
   return dailyGeneratedVolume
@@ -118,16 +104,19 @@ export function updateVolume(
   user: Address,
   amount: BigInt,
   timestamp: BigInt,
+  pair: Address,
   volumeType: VolumeType
 ): void {
-  const generatedVolume = getOrCreateGeneratedVolume(user)
-  const accWeeklyGeneratedVolume = getOrCreateWeeklyGeneratedVolume(
+  const generatedVolume = getOrCreateGeneratedVolume(user, pair)
+  const accWeeklyGeneratedVolume = getOrCreateEpochGeneratedVolume(
     user,
-    getRound(timestamp)
+    getEpoch(timestamp),
+    pair
   )
   const accDailyGeneratedVolume = getOrCreateDailyGeneratedVolume(
     user,
-    getDay(timestamp)
+    getDay(timestamp),
+    pair
   )
   if (volumeType == VolumeType.USER) {
     generatedVolume.amountAsUser = generatedVolume.amountAsUser.plus(amount)
@@ -169,32 +158,6 @@ export function updateVolume(
   accDailyGeneratedVolume.save()
 }
 
-export function getOrCreateLottery(round: BigInt): Lottery {
-  let id = round.toString()
-  let lottery = Lottery.load(id)
-  if (lottery == null) {
-    lottery = new Lottery(id)
-    lottery.round = round
-    lottery.totalTikets = BigInt.fromI32(0)
-    lottery.save()
-  }
-  return lottery
-}
-export function getOrCreateUserLottery(
-  round: BigInt,
-  user: Address
-): UserLottery {
-  let id = user.toHex() + "-" + round.toString()
-  let userLottery = UserLottery.load(id)
-  if (userLottery == null) {
-    userLottery = new UserLottery(id)
-    userLottery.user = user
-    userLottery.round = round
-    userLottery.tickets = BigInt.fromI32(0)
-    userLottery.save()
-  }
-  return userLottery
-}
 export function createReferral(referrer: Address, user: Address): void {
   let id = user.toHex() + "-" + referrer.toHex()
   let referral = Referral.load(id)
