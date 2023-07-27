@@ -7,7 +7,8 @@ import {
   zero_address,
   createReferral,
   updateVolume,
-  VolumeType
+  VolumeType,
+  updateDailyPerPairVolume
 } from "../utils"
 import { Pair } from "../../generated/templates/PairReader/Pair"
 import {
@@ -28,6 +29,7 @@ import {
 
 export class SwapHandler {
   event: Swap
+  eventAddress: Address
   pair: Pair
   pairFactory: PairFactory
   dibs: Dibs
@@ -49,6 +51,7 @@ export class SwapHandler {
     const user = event.transaction.from
 
     this.event = event
+    this.eventAddress = event.address
     this.pair = pair
     this.dibs = dibs
     this.priceFeed = getWethPriceFeed()
@@ -83,6 +86,7 @@ export class SwapHandler {
   public handle(): void {
     this._handle0()
     this._handle1()
+    this._handle_pair()
   }
 
   private _handle0(): void {
@@ -111,6 +115,17 @@ export class SwapHandler {
       this._createSwapLog(amountIn, token)
     }
   }
+
+  private _handle_pair(): void{
+    const volumeInWeth0 = this._getVolumeInWeth(this.token0, this.amountIn0);
+    const volumeInWeth1 = this._getVolumeInWeth(this.token1, this.amountIn1);
+    const volumeInDollars = this._getVolumeInDollars(volumeInWeth0.plus(volumeInWeth1))
+
+    updateDailyPerPairVolume(this.user, this.eventAddress, volumeInDollars, this.timestamp, VolumeType.USER)
+    updateDailyPerPairVolume(this.parent, this.eventAddress, volumeInDollars, this.timestamp, VolumeType.PARENT)
+    updateDailyPerPairVolume(this.grandParent, this.eventAddress, volumeInDollars, this.timestamp, VolumeType.GRANDPARENT)
+  }
+
 
   private _createSwapLog(amountIn: BigInt, token: Address): void {
     const volumeInWeth = this._getVolumeInWeth(token, amountIn)

@@ -44,19 +44,7 @@ type GeneratedVolume @entity {
   amountAsUser: BigInt!
   amountAsReferrer: BigInt!
   amountAsGrandparent: BigInt!
-  pair: Bytes!
   lastUpdate: BigInt!
-}
-
-type WeeklyGeneratedVolume @entity {
-  id: ID! # user - round (epoch)
-  user: Bytes!
-  amountAsUser: BigInt!
-  amountAsReferrer: BigInt!
-  amountAsGrandparent: BigInt!
-  lastUpdate: BigInt!
-  pair: Bytes!
-  epoch: BigInt!
 }
 
 type DailyGeneratedVolume @entity {
@@ -66,7 +54,6 @@ type DailyGeneratedVolume @entity {
   amountAsReferrer: BigInt!
   amountAsGrandparent: BigInt!
   lastUpdate: BigInt!
-  pair: Bytes!
   day: BigInt!
 }
 
@@ -99,4 +86,26 @@ type PathToTarget @entity {
   token: Bytes!
   target: Bytes!
   path: [Bytes!]! # path of pairs
+}
+
+
+type PerPairGeneratedVolume @entity {
+  id: ID! # user - pair
+  user: Bytes!
+  pair: Bytes!
+  amountAsUser: BigInt!
+  amountAsReferrer: BigInt!
+  amountAsGrandparent: BigInt!
+  lastUpdate: BigInt!
+}
+
+type DailyPerPairGeneratedVolume @entity {
+  id: ID! # user - pair - day
+  user: Bytes!
+  pair: Bytes!
+  amountAsUser: BigInt!
+  amountAsReferrer: BigInt!
+  amountAsGrandparent: BigInt!
+  lastUpdate: BigInt!
+  day: BigInt!
 }

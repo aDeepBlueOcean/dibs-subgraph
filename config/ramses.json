@@ -5,7 +5,7 @@
   "epochDuration": 604800,
   "weth": "0x21dd036CFAB09243eeffCFC24C47b3baA860f9b7",
   "wethPriceFeed": "0x639fe6ab55c921f74e7fac1ee960c0b6293ba612",
-  "dibs": "0x664cE330511653cB2744b8eD50DbA31C6c4C08ca",
+  "dibs": "0x21dd036CFAB09243eeffCFC24C47b3baA860f9b7",
   "factoryAddress": "0xAAA20D08e59F6561f242b08513D36266C5A29415",
   "factoryStartBlock": 69820005,
   "dibsStartBlock": 110093620
